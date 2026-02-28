@@ -1,45 +1,50 @@
-// backend/src/modules/tasks/task.service.ts
-
 import Task from "./task.model";
 import { IUser } from "../users/user.model";
 import { canTransition } from "../../utils/taskStateMachine";
 import { calculateTaskTime } from "../../utils/timeCalculator";
 import { logActivity } from "../audit/audit.service";
 import User from "../users/user.model";
-import { calculatePerformanceScore, getRatingTag } from "../../utils/calculatePerformance";
-
+import {
+  calculatePerformanceScore,
+  getRatingTag,
+} from "../../utils/calculatePerformance";
+import { calculateSLAStatus } from "../../utils/slaPredictor";
+import escalationService from "../escalation/escalation.service";
+import { predictDeadlineRisk } from "../../utils/aiDeadlinePredictor";
 class TaskService {
-
-  // ADD THIS METHOD ABOVE startTask()
 
   async createTask(data: any, currentUser: IUser) {
 
-    const task = await Task.create({
-      organizationId: currentUser.organizationId,
-      clientId: data.clientId,
-      projectId: data.projectId,
+  const aiRisk = await predictDeadlineRisk(
+    data.assignedTo,
+    data.estimatedMinutes
+  );
 
-      title: data.title,
-      description: data.description,
+  const task = await Task.create({
+    organizationId: currentUser.organizationId,
+    clientId: data.clientId,
+    projectId: data.projectId,
+    title: data.title,
+    description: data.description,
+    assignedBy: currentUser._id,
+    assignedTo: data.assignedTo,
+    status: "ASSIGNED",
+    priority: data.priority || "MEDIUM",
+    estimatedMinutes: data.estimatedMinutes,
+    slaStatus: "SAFE",
+    aiRiskLevel: aiRisk,
+  });
 
-      assignedBy: currentUser._id,
-      assignedTo: data.assignedTo,
-
-      status: "ASSIGNED",
-      priority: data.priority || "MEDIUM",
-
-      estimatedMinutes: data.estimatedMinutes,
-    });
-
-    return task;
-  }
-
+  return task;
+}
 
   async startTask(taskId: string, currentUser: IUser) {
+
     const task = await Task.findOne({
       _id: taskId,
       organizationId: currentUser.organizationId,
     });
+
     if (!task) throw new Error("Task not found");
 
     if (!task.assignedTo.equals(currentUser._id))
@@ -50,6 +55,12 @@ class TaskService {
 
     task.status = "IN_PROGRESS";
     task.startedAt = new Date();
+
+    task.slaStatus = calculateSLAStatus(
+      task.startedAt,
+      task.estimatedMinutes,
+      task.delayMinutes
+    );
 
     await task.save();
 
@@ -65,10 +76,12 @@ class TaskService {
   }
 
   async submitTask(taskId: string, submissionData: string, currentUser: IUser) {
+
     const task = await Task.findOne({
       _id: taskId,
       organizationId: currentUser.organizationId,
     });
+
     if (!task) throw new Error("Task not found");
 
     if (!task.assignedTo.equals(currentUser._id))
@@ -79,15 +92,15 @@ class TaskService {
 
     if (!task.startedAt)
       throw new Error("Task not started");
-    if (task.status !== "IN_PROGRESS")
-      throw new Error("Task must be in progress");
+
     const now = new Date();
 
-    const { actualMinutes, delayMinutes } = calculateTaskTime(
-      task.startedAt,
-      now,
-      task.estimatedMinutes
-    );
+    const { actualMinutes, delayMinutes } =
+      calculateTaskTime(
+        task.startedAt,
+        now,
+        task.estimatedMinutes
+      );
 
     task.status = "IN_REVIEW";
     task.submittedAt = now;
@@ -96,8 +109,29 @@ class TaskService {
     task.submissionData = submissionData;
     task.submissionType = submissionData?.startsWith("http")
       ? "LINK"
-      : "TEXT"; // basic detection (improve later)
+      : "TEXT";
+
+    task.slaStatus = calculateSLAStatus(
+      task.startedAt,
+      task.estimatedMinutes,
+      task.delayMinutes
+    );
+
     await task.save();
+
+    // 🔥 ESCALATION CHECK (SAFE VERSION)
+    if (task.slaStatus === "AT_RISK") {
+
+      const alreadyEscalated =
+        await escalationService.hasOpenEscalation(task._id);
+
+      if (!alreadyEscalated) {
+        await escalationService.createEscalation(
+          task,
+          "Task is at risk of deadline breach"
+        );
+      }
+    }
 
     await logActivity({
       organizationId: task.organizationId,
@@ -111,77 +145,67 @@ class TaskService {
   }
 
   async approveTask(taskId: string, currentUser: IUser) {
+
     const task = await Task.findOne({
       _id: taskId,
       organizationId: currentUser.organizationId,
     });
+
     if (!task) throw new Error("Task not found");
 
     if (!canTransition(task.status, "APPROVED"))
       throw new Error("Invalid state transition");
+
     if (!currentUser.roles.some((role: any) =>
       role.name === "ADMIN" || role.name === "TL"
     )) {
       throw new Error("Not authorized to approve");
     }
+
     task.status = "APPROVED";
     task.completedAt = new Date();
+    task.slaStatus =
+      task.delayMinutes > 0 ? "OVERDUE" : "SAFE";
 
     await task.save();
 
-    await this.updateUserPerformance(task.assignedTo.toString(), task);
+    // 🔥 ESCALATION CHECK FOR LATE TASK
+    if (task.delayMinutes > 0) {
 
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_APPROVED",
-      targetType: "TASK",
-      targetId: task._id,
-    });
+      const alreadyEscalated =
+        await escalationService.hasOpenEscalation(task._id);
 
-    return task;
-  }
+      if (!alreadyEscalated) {
+        await escalationService.createEscalation(
+          task,
+          "Task completed after deadline"
+        );
+      }
+    }
 
-
-
-  async requestRevision(taskId: string, currentUser: IUser) {
-
-    const task = await Task.findOne({
-      _id: taskId,
-      organizationId: currentUser.organizationId,
-    });
-
-    if (!task) throw new Error("Task not found");
-
-    if (!canTransition(task.status, "CHANGES_REQUESTED"))
-      throw new Error("Invalid state transition");
-
-    task.status = "CHANGES_REQUESTED";
-    task.revisionCount += 1;
-
-    await task.save();
+    await this.updateUserPerformance(
+      task.assignedTo.toString(),
+      task
+    );
 
     return task;
   }
-
-
-
 
   private async updateUserPerformance(userId: string, task: any) {
+
     const user = await User.findById(userId);
     if (!user) return;
 
     user.completedTasks += 1;
 
-    if (task.delayMinutes <= 0) {
+    if (task.delayMinutes <= 0)
       user.onTimeTasks += 1;
-    } else {
+    else
       user.lateTasks += 1;
-    }
 
-    // Average calculation
     const totalTime =
-      user.averageCompletionMinutes * (user.completedTasks - 1) +
+      user.averageCompletionMinutes *
+        (user.completedTasks - 1) +
       task.actualMinutes;
 
     user.averageCompletionMinutes =

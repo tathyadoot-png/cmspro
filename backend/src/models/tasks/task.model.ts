@@ -1,5 +1,3 @@
-// src/modules/tasks/task.model.ts
-
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export type TaskStatus =
@@ -12,6 +10,8 @@ export type TaskStatus =
   | "COMPLETED";
 
 export type SubmissionType = "IMAGE" | "LINK" | "FILE" | "TEXT";
+
+export type SLAStatus = "SAFE" | "AT_RISK" | "OVERDUE";
 
 export interface ITask extends Document {
   organizationId: Types.ObjectId;
@@ -43,9 +43,12 @@ export interface ITask extends Document {
 
   ratingByTL?: number;
 
-  // 🔥 ADD THESE
+  // 🔥 SLA FIELD ADDED
+  slaStatus: SLAStatus;
+
   createdAt: Date;
   updatedAt: Date;
+  aiRiskLevel?: "SAFE" | "AT_RISK" | "HIGH_RISK";
 }
 
 const TaskSchema = new Schema<ITask>(
@@ -131,11 +134,23 @@ const TaskSchema = new Schema<ITask>(
       min: 1,
       max: 5,
     },
+
+    // 🔥 SLA FIELD SCHEMA
+    slaStatus: {
+      type: String,
+      enum: ["SAFE", "AT_RISK", "OVERDUE"],
+      default: "SAFE",
+      index: true,
+    },
+    aiRiskLevel: {
+  type: String,
+  enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
+  default: "SAFE",
+},
   },
   { timestamps: true }
 );
 
-/* Compound Index for Dashboard Speed */
 TaskSchema.index({ organizationId: 1, status: 1 });
 TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ clientId: 1, status: 1 });

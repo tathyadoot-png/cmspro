@@ -4,6 +4,8 @@ import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
 import { getWorkload } from "./workload.controller";
 import { getBurnoutStatus } from "./burnout.controller";
+import { getSLAOverview } from "./sla.controller";
+
 import {
   getWeeklyTrend,
   getMonthlyTrend,
@@ -46,6 +48,13 @@ router.get(
   authMiddleware,
   requirePermission("USER_VIEW"),
   getMonthlyTrend
-)
+);
+
+router.get(
+  "/sla",
+  authMiddleware,
+  requirePermission("USER_VIEW"),
+  getSLAOverview
+);
 
 export default router;
