@@ -8,11 +8,12 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import { initSocket } from "./socket";
 
 import routes from "./routes";
 import { seedRolesAndPermissions } from "./seed/seedRolesAndPermissions";
 import { seedSuperAdmin } from "./seed/seedSuperAdmin";
-
+import { seedDemoData } from "./seed/seedDemoData";
 const app = express();
 
 // 🔐 Middlewares
@@ -63,6 +64,7 @@ mongoose
     // 🌱 Seed before server starts
     await seedRolesAndPermissions();
     await seedSuperAdmin();
+    await seedDemoData();
 
     server.listen(5000, () => {
       console.log("🚀 Server running on http://localhost:5000");

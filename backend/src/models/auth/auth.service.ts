@@ -1,5 +1,3 @@
-// backend/src/models/auth/auth.service.ts
-
 import User from "../users/user.model";
 import bcrypt from "bcryptjs";
 import {
@@ -10,7 +8,16 @@ import {
 class AuthService {
 
   async login(email: string, password: string) {
-    const user = await User.findOne({ email }).select("+password");
+
+    const user = await User.findOne({ email })
+      .select("+password")
+      .populate({
+        path: "roles",
+        populate: {
+          path: "permissions",
+          select: "name",
+        },
+      });
 
     if (!user) throw new Error("Invalid credentials");
 
@@ -25,7 +32,7 @@ class AuthService {
       user.failedAttempts += 1;
 
       if (user.failedAttempts >= 5) {
-        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
         user.failedAttempts = 0;
       }
 

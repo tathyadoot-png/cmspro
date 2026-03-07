@@ -9,6 +9,7 @@ export const authMiddleware = async (
 ) => {
 
   try {
+
     const token = req.cookies?.accessToken;
 
     if (!token) {
@@ -20,26 +21,32 @@ export const authMiddleware = async (
 
     const decoded: any = verifyAccessToken(token);
 
-const user = await User.findById(decoded.id)
-  .populate({
-    path: "roles",
-    populate: {
-      path: "permissions",
-    },
-  });    if (!user) {
+    const user = await User.findById(decoded.id)
+      .populate({
+        path: "roles",
+        populate: {
+          path: "permissions",
+        },
+      })
+      .lean();
+
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "User not found",
       });
     }
 
-    req.user = user;
+    req.user = user as any;
+
     next();
 
   } catch (error) {
+
     return res.status(401).json({
       success: false,
       message: "Invalid token",
     });
+
   }
 };

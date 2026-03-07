@@ -11,6 +11,7 @@ import {
 import { calculateSLAStatus } from "../../utils/slaPredictor";
 import escalationService from "../escalation/escalation.service";
 import { predictDeadlineRisk } from "../../utils/aiDeadlinePredictor";
+import { io } from "../../socket";
 class TaskService {
 
   async createTask(data: any, currentUser: IUser) {
@@ -23,7 +24,7 @@ class TaskService {
   const task = await Task.create({
     organizationId: currentUser.organizationId,
     clientId: data.clientId,
-    projectId: data.projectId,
+    workshopId: data.workshopId,
     title: data.title,
     description: data.description,
     assignedBy: currentUser._id,
@@ -223,6 +224,67 @@ class TaskService {
 
     await user.save();
   }
+
+
+  async getTasks(currentUser: IUser) {
+
+  const tasks = await Task.find({
+    organizationId: currentUser.organizationId
+  })
+  .populate("assignedTo", "name email")
+  .sort({ createdAt: -1 })
+  .limit(20);
+
+  return tasks;
+}
+
+
+async requestRevision(taskId: string, currentUser: IUser) {
+
+  const task = await Task.findOne({
+    _id: taskId,
+    organizationId: currentUser.organizationId,
+  });
+
+  if (!task) throw new Error("Task not found");
+
+  if (!canTransition(task.status, "CHANGES_REQUESTED"))
+    throw new Error("Invalid state transition");
+
+  task.status = "CHANGES_REQUESTED";
+  task.revisionCount += 1;
+
+  await task.save();
+
+  return task;
+}
+
+async updateTaskStatus(taskId: string, status: string, user: IUser) {
+
+  const task = await Task.findOne({
+    _id: taskId,
+    organizationId: user.organizationId
+  });
+
+  if (!task) throw new Error("Task not found");
+
+  task.status = status as any;
+await logActivity({
+  organizationId: task.organizationId,
+  userId: user._id,
+  actionType: "TASK_STATUS_CHANGED",
+  targetType: "TASK",
+  targetId: task._id,
+});
+  await task.save();
+
+  // 🔥 Real-time update
+io.to(task.workshopId.toString()).emit("TASK_UPDATED", {
+  taskId: task._id,
+  status: task.status
+});
+  return task;
+}
 }
 
 export default new TaskService();

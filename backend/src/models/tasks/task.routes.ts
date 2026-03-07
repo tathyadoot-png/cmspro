@@ -4,7 +4,9 @@ import {
   startTask,
   submitTask,
   approveTask,
-  requestRevision
+  requestRevision,
+    getTasks,
+    updateTaskStatus
 } from "./task.controller";
 
 import { authMiddleware } from "../../middleware/auth.middleware";
@@ -47,4 +49,22 @@ router.patch(
   requestRevision
 );
 
+// router.get(
+//   "/",
+//   authMiddleware,
+//   requirePermission("TASK_VIEW"),
+//   getTasks
+// );
+
+router.get(
+  "/",
+  authMiddleware,
+  getTasks
+);
+
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  updateTaskStatus
+);
 export default router;

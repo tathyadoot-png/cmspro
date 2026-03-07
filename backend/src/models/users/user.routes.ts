@@ -1,7 +1,11 @@
-// backend/src/models/users/user.routes.ts
-
 import { Router } from "express";
-import { createUser } from "./user.controller";
+import {
+  createUser,
+  getUsers,
+  updateUser,
+  deleteUser
+} from "./user.controller";
+
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requireRole } from "../../middleware/role.middleware";
 
@@ -10,8 +14,29 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
-  requireRole(["SUPER_ADMIN", "ADMIN"]),
+  requireRole(["SUPER_ADMIN","ADMIN"]),
   createUser
+);
+
+router.get(
+  "/",
+  authMiddleware,
+  requireRole(["SUPER_ADMIN","ADMIN"]),
+  getUsers
+);
+
+router.put(
+  "/:id",
+  authMiddleware,
+  requireRole(["SUPER_ADMIN","ADMIN"]),
+  updateUser
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  requireRole(["SUPER_ADMIN","ADMIN"]),
+  deleteUser
 );
 
 export default router;

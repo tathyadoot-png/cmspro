@@ -16,8 +16,7 @@ export type SLAStatus = "SAFE" | "AT_RISK" | "OVERDUE";
 export interface ITask extends Document {
   organizationId: Types.ObjectId;
   clientId: Types.ObjectId;
-  projectId: Types.ObjectId;
-
+  workshopId: Types.ObjectId;
   title: string;
   description: string;
 
@@ -67,16 +66,15 @@ const TaskSchema = new Schema<ITask>(
       index: true,
     },
 
-    projectId: {
-      type: Schema.Types.ObjectId,
-      ref: "Project",
-      required: true,
-      index: true,
-    },
+workshopId: {
+  type: Schema.Types.ObjectId,
+  ref: "Workshop",
+  required: true,
+  index: true
+},
 
-    title: { type: String, required: true },
-    description: String,
-
+title: { type: String, required: true },
+description: String,
     assignedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -143,10 +141,10 @@ const TaskSchema = new Schema<ITask>(
       index: true,
     },
     aiRiskLevel: {
-  type: String,
-  enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
-  default: "SAFE",
-},
+      type: String,
+      enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
+      default: "SAFE",
+    },
   },
   { timestamps: true }
 );
@@ -154,5 +152,6 @@ const TaskSchema = new Schema<ITask>(
 TaskSchema.index({ organizationId: 1, status: 1 });
 TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ clientId: 1, status: 1 });
-
+TaskSchema.index({ workshopId: 1, status: 1 });
+TaskSchema.index({ workshopId: 1, assignedTo: 1 });
 export default mongoose.model<ITask>("Task", TaskSchema);

@@ -12,9 +12,18 @@ export const requirePermission = (permissionName: string) => {
 
     const roles = req.user.roles as any[];
 
+    // SUPER ADMIN BYPASS
+    const isSuperAdmin = roles.some(
+      (role: any) => role?.name === "SUPER_ADMIN"
+    );
+
+    if (isSuperAdmin) {
+      return next();
+    }
+
     const hasPermission = roles.some((role: any) =>
-      role.permissions.some(
-        (perm: any) => perm.name === permissionName
+      role?.permissions?.some(
+        (perm: any) => perm?.name === permissionName
       )
     );
 
