@@ -42,3 +42,32 @@ const messages = await messageService.getMessages(workshopId);
  });
 
 };
+
+export const getMessagesByWorkshop = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    const messages = await messageService.getMessagesByWorkshop(
+      req.params.id as string,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      data: messages,
+    });
+
+  } catch (error: any) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};

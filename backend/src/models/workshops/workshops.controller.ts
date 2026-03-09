@@ -51,3 +51,60 @@ export const getWorkshops = async (req: Request, res: Response) => {
   }
 
 };
+
+export const getWorkshopById = async (req: Request, res: Response) => {
+
+  try {
+
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    const workshop = await workshopService.getWorkshopById(
+      req.params.id as string,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      data: workshop,
+    });
+
+  } catch (error: any) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
+
+export const addMembers = async (req: Request, res: Response) => {
+
+  try {
+
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    const workshop = await workshopService.addMembers(
+      req.params.id as string,
+      req.body.members,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      data: workshop,
+    });
+
+  } catch (error: any) {
+
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};

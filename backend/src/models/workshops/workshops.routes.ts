@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createWorkshop, getWorkshops } from "./workshops.controller";
+import { addMembers, createWorkshop, getWorkshopById, getWorkshops } from "./workshops.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
 
@@ -19,4 +19,25 @@ router.get(
   getWorkshops
 );
 
+router.get(
+"/:id",
+authMiddleware,
+requirePermission("WORKSHOP_VIEW"),
+getWorkshopById
+);
+
+router.post(
+"/:id/members",
+authMiddleware,
+requirePermission("WORKSHOP_UPDATE"),
+addMembers
+);
+
+
+router.get(
+  "/:id",
+  authMiddleware,
+  requirePermission("WORKSHOP_VIEW"),
+  getWorkshopById
+);
 export default router;

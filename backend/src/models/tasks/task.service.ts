@@ -225,19 +225,21 @@ class TaskService {
     await user.save();
   }
 
+async getTasks(currentUser:IUser,workshopId?:string){
 
-  async getTasks(currentUser: IUser) {
+const query:any={
+organizationId:currentUser.organizationId
+};
 
-  const tasks = await Task.find({
-    organizationId: currentUser.organizationId
-  })
-  .populate("assignedTo", "name email")
-  .sort({ createdAt: -1 })
-  .limit(20);
-
-  return tasks;
+if(workshopId){
+query.workshopId = workshopId;
 }
 
+return Task.find(query)
+.populate("assignedTo","name email")
+.sort({createdAt:-1});
+
+}
 
 async requestRevision(taskId: string, currentUser: IUser) {
 

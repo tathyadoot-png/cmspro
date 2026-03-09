@@ -14,6 +14,7 @@ import dashboardRiskRoutes from "./models/dashboard/dashboard.risk.routes";
 import roleRoutes from "./models/roles/role.routes";
 import performanceRoutes from "./models/analytics/performance.routes";
 import workshopRoutes from "./models/workshops/workshops.routes";
+import auditRoutes from "./models/audit/audit.routes";
 const router = Router();
 
 router.use("/performance", performanceRoutes);
@@ -30,4 +31,5 @@ router.use("/reassign", reassignmentRoutes);
 router.use("/activity", activityRoutes);
 router.use("/roles", roleRoutes);
 router.use("/workshops", workshopRoutes);
+router.use("/activity", auditRoutes);
 export default router;

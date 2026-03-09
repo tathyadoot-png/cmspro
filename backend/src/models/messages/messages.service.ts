@@ -18,6 +18,17 @@ class MessageService{
 
  }
 
+ async getMessagesByWorkshop(workshopId:string,user:IUser){
+
+return Message.find({
+workshopId,
+organizationId:user.organizationId
+})
+.populate("sender","name email")
+.sort({createdAt:1});
+
+}
+
 }
 
 export default new MessageService();
