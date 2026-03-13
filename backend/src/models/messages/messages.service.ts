@@ -1,24 +1,28 @@
 import Message from "./message.model";
+import { IUser } from "../users/user.model";
 
-class MessageService{
+class MessageService {
 
- async sendMessage(data:any){
+async sendMessage(data:any,user:IUser){
 
-  const message = await Message.create(data);
+const message = await Message.create({
 
-  return message;
+organizationId:user.organizationId,
 
- }
+workshopId:data.workshopId,
 
- async getMessages(workshopId:string){
+sender:user._id,
 
-  return Message.find({workshopId})
-  .populate("sender","name userCode")
-  .sort({createdAt:1});
+message:data.message
 
- }
+});
 
- async getMessagesByWorkshop(workshopId:string,user:IUser){
+return message;
+
+}
+
+
+async getMessagesByWorkshop(workshopId:string,user:IUser){
 
 return Message.find({
 workshopId,

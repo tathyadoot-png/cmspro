@@ -1,39 +1,46 @@
-import mongoose,{Schema,Document,Types} from "mongoose";
+import mongoose, { Schema, Document, Types } from "mongoose";
 
-export interface IMessage extends Document{
+export interface IMessage extends Document {
 
- workshopId: Types.ObjectId;
+  organizationId: Types.ObjectId;
 
- sender: Types.ObjectId;
+  workshopId: Types.ObjectId;
 
- message?: string;
+  sender: Types.ObjectId;
 
- image?: string;
-
- videoLink?: string;
+  message: string;
 
 }
 
-const MessageSchema = new Schema({
+const MessageSchema = new Schema<IMessage>(
+  {
 
- workshopId:{
-  type:Schema.Types.ObjectId,
-  ref:"Workshop",
-  required:true
- },
+    organizationId: {
+      type: Schema.Types.ObjectId,
+      ref: "Organization",
+      required: true,
+    },
 
- sender:{
-  type:Schema.Types.ObjectId,
-  ref:"User",
-  required:true
- },
+    workshopId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workshop",
+      required: true,
+      index: true,
+    },
 
- message:String,
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
 
- image:String,
+    message: {
+      type: String,
+      required: true,
+    },
 
- videoLink:String
+  },
+  { timestamps: true }
+);
 
-},{timestamps:true});
-
-export default mongoose.model<IMessage>("Message",MessageSchema);
+export default mongoose.model<IMessage>("Message", MessageSchema);

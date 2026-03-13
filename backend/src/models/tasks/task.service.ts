@@ -16,28 +16,28 @@ class TaskService {
 
   async createTask(data: any, currentUser: IUser) {
 
-  const aiRisk = await predictDeadlineRisk(
-    data.assignedTo,
-    data.estimatedMinutes
-  );
+    const aiRisk = await predictDeadlineRisk(
+      data.assignedTo,
+      data.estimatedMinutes
+    );
 
-  const task = await Task.create({
-    organizationId: currentUser.organizationId,
-    clientId: data.clientId,
-    workshopId: data.workshopId,
-    title: data.title,
-    description: data.description,
-    assignedBy: currentUser._id,
-    assignedTo: data.assignedTo,
-    status: "ASSIGNED",
-    priority: data.priority || "MEDIUM",
-    estimatedMinutes: data.estimatedMinutes,
-    slaStatus: "SAFE",
-    aiRiskLevel: aiRisk,
-  });
+    const task = await Task.create({
+      organizationId: currentUser.organizationId,
+      clientId: data.clientId,
+      workshopId: data.workshopId,
+      title: data.title,
+      description: data.description,
+      assignedBy: currentUser._id,
+      assignedTo: data.assignedTo,
+      status: "ASSIGNED",
+      priority: data.priority || "MEDIUM",
+      estimatedMinutes: data.estimatedMinutes,
+      slaStatus: "SAFE",
+      aiRiskLevel: aiRisk,
+    });
 
-  return task;
-}
+    return task;
+  }
 
   async startTask(taskId: string, currentUser: IUser) {
 
@@ -206,7 +206,7 @@ class TaskService {
 
     const totalTime =
       user.averageCompletionMinutes *
-        (user.completedTasks - 1) +
+      (user.completedTasks - 1) +
       task.actualMinutes;
 
     user.averageCompletionMinutes =
@@ -225,68 +225,68 @@ class TaskService {
     await user.save();
   }
 
-async getTasks(currentUser:IUser,workshopId?:string){
+  async getTasks(currentUser: IUser, workshopId?: string) {
 
-const query:any={
-organizationId:currentUser.organizationId
-};
+    const query: any = {
+      organizationId: currentUser.organizationId
+    };
 
-if(workshopId){
-query.workshopId = workshopId;
-}
+    if (workshopId) {
+      query.workshopId = workshopId;
+    }
 
-return Task.find(query)
-.populate("assignedTo","name email")
-.sort({createdAt:-1});
+    return Task.find(query)
+      .populate("assignedTo", "name email")
+      .sort({ createdAt: -1 });
 
-}
+  }
 
-async requestRevision(taskId: string, currentUser: IUser) {
+  async requestRevision(taskId: string, currentUser: IUser) {
 
-  const task = await Task.findOne({
-    _id: taskId,
-    organizationId: currentUser.organizationId,
-  });
+    const task = await Task.findOne({
+      _id: taskId,
+      organizationId: currentUser.organizationId,
+    });
 
-  if (!task) throw new Error("Task not found");
+    if (!task) throw new Error("Task not found");
 
-  if (!canTransition(task.status, "CHANGES_REQUESTED"))
-    throw new Error("Invalid state transition");
+    if (!canTransition(task.status, "CHANGES_REQUESTED"))
+      throw new Error("Invalid state transition");
 
-  task.status = "CHANGES_REQUESTED";
-  task.revisionCount += 1;
+    task.status = "CHANGES_REQUESTED";
+    task.revisionCount += 1;
 
-  await task.save();
+    await task.save();
 
-  return task;
-}
+    return task;
+  }
 
-async updateTaskStatus(taskId: string, status: string, user: IUser) {
+  async updateTaskStatus(taskId: string, status: string, user: IUser) {
 
-  const task = await Task.findOne({
-    _id: taskId,
-    organizationId: user.organizationId
-  });
+    const task = await Task.findOne({
+      _id: taskId,
+      organizationId: user.organizationId
+    });
 
-  if (!task) throw new Error("Task not found");
+    if (!task) throw new Error("Task not found");
 
-  task.status = status as any;
-await logActivity({
-  organizationId: task.organizationId,
-  userId: user._id,
-  actionType: "TASK_STATUS_CHANGED",
-  targetType: "TASK",
-  targetId: task._id,
-});
-  await task.save();
+    task.status = status as any;
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: user._id,
+      actionType: "TASK_STATUS_CHANGED",
+      targetType: "TASK",
+      targetId: task._id,
+    });
+    await task.save();
 
-  // 🔥 Real-time update
-io.to(task.workshopId.toString()).emit("TASK_UPDATED", {
-  taskId: task._id,
-  status: task.status
-});
-  return task;
-}
+    // 🔥 Real-time update
+    io.to(task.workshopId.toString()).emit("TASK_UPDATED", {
+      taskId: task._id,
+      status: task.status
+    });
+    return task;
+  }
 }
 
 export default new TaskService();

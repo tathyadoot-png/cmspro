@@ -15,6 +15,7 @@ import roleRoutes from "./models/roles/role.routes";
 import performanceRoutes from "./models/analytics/performance.routes";
 import workshopRoutes from "./models/workshops/workshops.routes";
 import auditRoutes from "./models/audit/audit.routes";
+import messageRoutes from "./models/messages/messages.routes";
 const router = Router();
 
 router.use("/performance", performanceRoutes);
@@ -32,4 +33,5 @@ router.use("/activity", activityRoutes);
 router.use("/roles", roleRoutes);
 router.use("/workshops", workshopRoutes);
 router.use("/activity", auditRoutes);
+router.use("/messages", messageRoutes);
 export default router;
