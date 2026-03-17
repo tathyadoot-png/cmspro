@@ -5,21 +5,21 @@ export const navigation = [
     permission: "USER_VIEW",
   },
 
-  {
-    label: "Create Task",
-    path: "/dashboard/tasks/create",
-    permission: "TASK_CREATE",
-  },
+  // {
+  //   label: "Create Task",
+  //   path: "/dashboard/tasks/create",
+  //   permission: "TASK_CREATE",
+  // },
   {
     label: "Clients",
     path: "/dashboard/clients",
     permission: "CLIENT_VIEW",
   },
-  {
-    label: "Projects",
-    path: "/dashboard/projects",
-    permission: "PROJECT_VIEW",
-  },
+  // {
+  //   label: "Projects",
+  //   path: "/dashboard/projects",
+  //   permission: "PROJECT_VIEW",
+  // },
 
   // 🔥 ADD THIS
 {
