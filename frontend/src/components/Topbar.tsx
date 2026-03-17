@@ -5,12 +5,14 @@ import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function Topbar() {
-  const { user } = useAuth();
+const { user, setUser } = useAuth();
   const router = useRouter();
+
 
   const logout = async () => {
     try {
       await api.post("/auth/logout");
+       setUser(null);
       router.push("/login");
     } catch (error) {
       console.error("Logout failed", error);

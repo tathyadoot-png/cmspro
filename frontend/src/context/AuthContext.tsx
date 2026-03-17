@@ -13,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   fetchUser: () => Promise<void>;
+  setUser: (user: User | null) => void; 
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, fetchUser }}>
+    <AuthContext.Provider value={{ user, loading, fetchUser,setUser  }}>
       {children}
     </AuthContext.Provider>
   );

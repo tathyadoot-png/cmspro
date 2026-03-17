@@ -50,3 +50,30 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     user: req.user,
   });
 };
+
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    return res.json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Logout failed",
+    });
+  }
+};
