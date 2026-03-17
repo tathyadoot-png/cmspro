@@ -1,22 +1,24 @@
 import { Router } from "express";
+import multer from "multer";
 import { uploadImage } from "../../utils/uploadImage";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
+const upload = multer({
+  limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+});
 
+router.post("/", upload.single("file"), async (req, res) => {
   try {
 
-    const { file } = req.body;
-
-    if (!file) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
         message: "File required"
       });
     }
 
-    const url = await uploadImage(file);
+    const url = await uploadImage(req.file.buffer);
 
     res.json({
       success: true,
@@ -33,7 +35,6 @@ router.post("/", async (req, res) => {
     });
 
   }
-
 });
 
 export default router;

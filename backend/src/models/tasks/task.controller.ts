@@ -4,37 +4,66 @@
   import taskService from "./task.service";
 
 
-  export const createTask = async (req: Request, res: Response) => {
+ export const createTask = async (req: Request, res: Response) => {
+  try {
 
-    try {
+    /* 🔥 DEBUG (important) */
+    console.log("REQ BODY:", req.body);
+    console.log("REQ USER:", req.user);
 
-      if (!req.user) {
-        return res.status(401).json({
-          success:false,
-          message:"Unauthorized"
-        });
-      }
-
-      const task = await taskService.createTask(
-        req.body,
-        req.user
-      );
-
-      res.status(201).json({
-        success:true,
-        data:task
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
       });
-
-    } catch(error:any){
-
-      res.status(400).json({
-        success:false,
-        message:error.message
-      });
-
     }
 
-  };
+    /* 🔥 BASIC VALIDATION */
+    const { title, assignedTo, workshopId } = req.body;
+
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        message: "Title is required"
+      });
+    }
+
+    if (!assignedTo) {
+      return res.status(400).json({
+        success: false,
+        message: "Assign user required"
+      });
+    }
+
+    if (!workshopId) {
+      return res.status(400).json({
+        success: false,
+        message: "Workshop required"
+      });
+    }
+
+    /* 🔥 CREATE TASK */
+    const task = await taskService.createTask(
+      req.body,
+      req.user
+    );
+
+    res.status(201).json({
+      success: true,
+      data: task
+    });
+
+  } catch (error: any) {
+
+    console.error("❌ CREATE TASK ERROR:", error);
+
+    res.status(400).json({
+      success: false,
+      message: error.message || "Task creation failed"
+    });
+
+  }
+};
 
   export const startTask = async (req: Request, res: Response) => {
     try {

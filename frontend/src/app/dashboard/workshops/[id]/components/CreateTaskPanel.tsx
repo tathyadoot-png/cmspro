@@ -1,209 +1,190 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 
 export default function CreateTaskPanel({ workshop }: any) {
 
-    const [form, setForm] = useState({
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    assignedTo: "",
+    estimatedMinutes: 30,
+    priority: "MEDIUM",
+    referenceLink: ""
+  });
 
-        title: "",
-        description: "",
-        assignedTo: "",
-        estimatedMinutes: 30,
-        priority: "MEDIUM",
-        referenceLink: ""
+  const [images, setImages] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
 
+  /* =========================
+     UPLOAD IMAGE
+  ========================= */
+const uploadImage = async (file: File) => {
+  try {
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
 
-    const [images, setImages] = useState<any[]>([]);
-    const [uploading, setUploading] = useState(false);
+    setImages((prev) => [...prev, res.data.url]);
+  } catch (err) {
+    console.error(err);
+    alert("Upload failed");
+  } finally {
+    setUploading(false);
+  }
+};
+  /* =========================
+     HANDLE FILE CHANGE
+  ========================= */
+const handleFileChange = async (e: any) => {
+  const files = e.target.files;
+  if (!files) return;
 
-const uploadImage = async(file:any)=>{
-
-const reader = new FileReader();
-
-reader.readAsDataURL(file);
-
-reader.onloadend = async()=>{
-
-try{
-
-const res = await api.post("/upload",{
-file:reader.result
-});
-
-setImages(prev=>[...prev,res.data.url]);
-
-}catch(err){
-
-console.error(err);
-alert("Image upload failed");
-
-}
-
+  for (const file of files) {
+    await uploadImage(file);
+  }
 };
 
-};
-    const createTask = async (e: any) => {
+  /* =========================
+     CREATE TASK
+  ========================= */
+  const createTask = async (e: any) => {
 
-        e.preventDefault();
+    e.preventDefault();
 
-        await api.post("/tasks", {
+    await api.post("/tasks", {
+      ...form,
+      workshopId: workshop._id,
+      clientId: workshop.clientId._id,
+      taskImages: images
+    });
 
-            ...form,
-            workshopId: workshop._id,
-            clientId: workshop.clientId._id,
-            taskImages: images
+    alert("Task created");
+  };
 
-        });
+  return (
 
-        alert("Task created");
+    <div className="border p-4 rounded space-y-4">
 
-    };
+      <h2 className="font-semibold text-lg">
+        Create Task
+      </h2>
 
-    return (
+      <form onSubmit={createTask} className="space-y-3">
 
-        <div className="border p-4 rounded space-y-4">
+        {/* TITLE */}
+        <input
+          className="border p-2 w-full"
+          placeholder="Task title"
+          value={form.title}
+          onChange={(e) =>
+            setForm({ ...form, title: e.target.value })
+          }
+        />
 
-            <h2 className="font-semibold text-lg">
-                Create Task
-            </h2>
+        {/* DESCRIPTION */}
+        <textarea
+          className="border p-2 w-full"
+          placeholder="Description"
+          value={form.description}
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
+        />
 
-            <form
-                onSubmit={createTask}
-                className="space-y-3"
-            >
+        {/* ASSIGN */}
+        <select
+          className="border p-2 w-full"
+          value={form.assignedTo}
+          onChange={(e) =>
+            setForm({ ...form, assignedTo: e.target.value })
+          }
+        >
+          <option value="">Assign Member</option>
+          {workshop?.members?.map((m: any) => (
+            <option key={m._id} value={m._id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
 
-                <input
-                    className="border p-2 w-full"
-                    placeholder="Task title"
-                    value={form.title}
-                    onChange={(e) =>
-                        setForm({ ...form, title: e.target.value })
-                    }
-                />
+        {/* TIME */}
+        <input
+          type="number"
+          className="border p-2 w-full"
+          placeholder="Estimated Minutes"
+          value={form.estimatedMinutes}
+          onChange={(e) =>
+            setForm({
+              ...form,
+              estimatedMinutes: Number(e.target.value)
+            })
+          }
+        />
 
-                <textarea
-                    className="border p-2 w-full"
-                    placeholder="Description"
-                    value={form.description}
-                    onChange={(e) =>
-                        setForm({ ...form, description: e.target.value })
-                    }
-                />
+        {/* PRIORITY */}
+        <select
+          className="border p-2 w-full"
+          value={form.priority}
+          onChange={(e) =>
+            setForm({ ...form, priority: e.target.value })
+          }
+        >
+          <option value="LOW">LOW</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="HIGH">HIGH</option>
+          <option value="URGENT">URGENT</option>
+        </select>
 
-                {/* Assign Member */}
+        {/* LINK */}
+        <input
+          className="border p-2 w-full"
+          placeholder="Video / Reference Link"
+          value={form.referenceLink}
+          onChange={(e) =>
+            setForm({ ...form, referenceLink: e.target.value })
+          }
+        />
 
-                <select
-                    className="border p-2 w-full"
-                    value={form.assignedTo}
-                    onChange={(e) =>
-                        setForm({ ...form, assignedTo: e.target.value })
-                    }
-                >
+        {/* IMAGE UPLOAD */}
+        <input
+          type="file"
+          multiple
+          onChange={handleFileChange}
+        />
 
-                    <option value="">Assign Member</option>
+        {uploading && (
+          <p className="text-sm text-blue-600">
+            Uploading image...
+          </p>
+        )}
 
-                    {workshop?.members?.map((m: any) => (
-                        <option key={m._id} value={m._id}>
-                            {m.name}
-                        </option>
-                    ))}
-
-                </select>
-
-                {/* Estimated Time */}
-
-                <input
-                    type="number"
-                    className="border p-2 w-full"
-                    placeholder="Estimated Minutes"
-                    value={form.estimatedMinutes}
-                    onChange={(e) =>
-                        setForm({
-                            ...form,
-                            estimatedMinutes: Number(e.target.value)
-                        })
-                    }
-                />
-
-                {/* Priority */}
-
-                <select
-                    className="border p-2 w-full"
-                    value={form.priority}
-                    onChange={(e) =>
-                        setForm({ ...form, priority: e.target.value })
-                    }
-                >
-
-                    <option value="LOW">LOW</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HIGH">HIGH</option>
-                    <option value="URGENT">URGENT</option>
-
-                </select>
-
-                {/* Video / Reference Link */}
-
-                <input
-                    className="border p-2 w-full"
-                    placeholder="Video / Reference Link"
-                    value={form.referenceLink}
-                    onChange={(e) =>
-                        setForm({ ...form, referenceLink: e.target.value })
-                    }
-                />
-
-                {/* Image Upload */}
-
-                <input
-                    type="file"
-                    multiple
-                    onChange={(e) => {
-
-                        const files = e.target.files;
-
-                        if (!files) return;
-
-                        for (let i = 0; i < files.length; i++) {
-
-                            uploadImage(files[i]);
-
-                        }
-
-                    }}
-                />
-
-                {uploading && <p>Uploading image...</p>}
-
-                {/* Preview */}
-
-                <div className="flex gap-2 flex-wrap">
-
-                    {images.map((img, i) => (
-                        <img
-                            key={i}
-                            src={img}
-                            className="w-20 h-20 object-cover rounded"
-                        />
-                    ))}
-
-                </div>
-
-                <button
-                    className="bg-green-600 text-white px-4 py-2 rounded"
-                >
-
-                    Create Task
-
-                </button>
-
-            </form>
-
+        {/* PREVIEW */}
+        <div className="flex gap-2 flex-wrap">
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              className="w-20 h-20 object-cover rounded"
+            />
+          ))}
         </div>
 
-    );
+        {/* BUTTON */}
+        <button className="bg-green-600 text-white px-4 py-2 rounded">
+          Create Task
+        </button>
 
+      </form>
+
+    </div>
+  );
 }
