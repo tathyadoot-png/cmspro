@@ -4,11 +4,7 @@ export const navigation = [
     path: "/dashboard",
     permission: "USER_VIEW",
   },
-  {
-    label: "Tasks",
-    path: "/dashboard/tasks",
-    permission: "TASK_VIEW",
-  },
+
   {
     label: "Create Task",
     path: "/dashboard/tasks/create",

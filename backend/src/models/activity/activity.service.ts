@@ -1,5 +1,4 @@
-import Activity from "./activity.model";
-import { io } from "../../socket";
+import { getIO } from "../../socket";
 
 export const logActivity = async (
   organizationId: string,
@@ -10,17 +9,34 @@ export const logActivity = async (
   taskId?: string
 ) => {
 
-  const activity = await Activity.create({
-    organizationId,
-    workshopId,
-    userId,
-    action,
-    message,
-    taskId
-  });
+  try {
 
-  // 🔥 Emit realtime event
-  io.to(workshopId.toString()).emit("NEW_ACTIVITY", activity);
+    // 🔥 यहाँ तुम्हारा DB save logic होगा (अगर है तो रहने दो)
 
-  return activity;
+    // 🔥 SOCKET SAFE EMIT
+    try {
+
+      const io = getIO();
+
+      io.to(workshopId.toString()).emit("ACTIVITY_LOG", {
+        organizationId,
+        workshopId,
+        userId,
+        action,
+        message,
+        taskId,
+        createdAt: new Date()
+      });
+
+    } catch (err) {
+
+      console.log("⚠️ Socket not initialized, skipping emit");
+
+    }
+
+  } catch (error) {
+
+    console.error("Activity log error:", error);
+
+  }
 };

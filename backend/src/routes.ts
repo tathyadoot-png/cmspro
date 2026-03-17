@@ -16,15 +16,19 @@ import performanceRoutes from "./models/analytics/performance.routes";
 import workshopRoutes from "./models/workshops/workshops.routes";
 import auditRoutes from "./models/audit/audit.routes";
 import messageRoutes from "./models/messages/messages.routes";
-import uploadRoutes from "./models/upload/upload.routes";
+import uploadRoutes from "./modules/upload/upload.routes";
 import taskCommentRoutes from "./models/taskComments/taskComment.routes";
 import leaderboardRoutes from "./models/analytics/leaderboard.routes";
 import teamAnalyticsRoutes from "./models/analytics/teamAnalytics.routes";
 
+import permissionRoutes from "./models/roles/permission.routes";
+import performanceRoutess from "./models/performance/performance.routes";
 
 const router = Router();
 
 
+router.use("/performancee", performanceRoutess); //njhfc
+router.use("/permissions", permissionRoutes);
 
 router.use("/analytics", teamAnalyticsRoutes);
 router.use("/analytics", leaderboardRoutes);

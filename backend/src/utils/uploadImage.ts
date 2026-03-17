@@ -1,11 +1,19 @@
 import cloudinary from "./cloudinary";
+import streamifier from "streamifier";
 
-export const uploadImage = async (file:string)=>{
+export const uploadImage = (buffer: Buffer): Promise<string> => {
+  return new Promise((resolve, reject) => {
 
- const result = await cloudinary.uploader.upload(file,{
-  folder:"tasks"
- });
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "tasks" },
+      (error, result) => {
 
- return result.secure_url;
+        if (error) return reject(error);
 
+        resolve(result?.secure_url || "");
+      }
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
 };
