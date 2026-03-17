@@ -12,6 +12,7 @@ import {
   AreaChart,
   
 } from "recharts";
+import { AlertTriangle } from "lucide-react";
 
 type DataType = {
   day: string;
@@ -21,6 +22,19 @@ type DataType = {
 type Props = {
   data: DataType[];
 };
+
+const CustomActiveDot = (props: any) => {
+  const { cx, cy } = props;
+
+  return (
+    <foreignObject x={cx - 12} y={cy - 12} width={24} height={24}>
+      <div className="flex items-center justify-center">
+        <AlertTriangle size={20} className="text-red-500 drop-shadow-md" />
+      </div>
+    </foreignObject>
+  );
+};
+
 
 export default function RiskTrendChart({ data }: Props) {
   return (
@@ -94,7 +108,7 @@ export default function RiskTrendChart({ data }: Props) {
               stroke="#ef4444"
               strokeWidth={4}
               dot={{ r: 4, fill: '#ef4444', strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 7, strokeWidth: 0, shadow: '0 0 10px #ef4444' }}
+              activeDot={<CustomActiveDot />}
               animationDuration={2000}
             />
           </AreaChart>
