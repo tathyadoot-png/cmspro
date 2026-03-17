@@ -136,27 +136,62 @@ export default function TaskDetailPage() {
         </div>
 
         <div className="space-y-4 max-w-3xl">
-          <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.4em]">Project Task Instance</p>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
-            {task.title}
-          </h1>
-          <p className="text-sm font-medium text-slate-500 leading-relaxed">
-            {task.description}
-          </p>
-          
-          <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-50">
-            <div>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Priority</p>
-              <p className="text-xs font-black text-slate-800 uppercase italic tracking-tighter">{task.priority || 'Standard'}</p>
-            </div>
-            <div>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Deadline</p>
-              <p className="text-xs font-black text-slate-800 tracking-tighter">
-                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No Limit'}
-              </p>
-            </div>
-          </div>
+
+  <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.4em]">
+    Project Task Instance
+  </p>
+
+  <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">
+    {task.title}
+  </h1>
+
+  <p className="text-sm font-medium text-slate-500 leading-relaxed">
+    {task.description}
+  </p>
+
+  {/* 🔥 TASK IMAGES (NEW ADDITION) */}
+  {task.taskImages && task.taskImages.length > 0 && (
+    <div className="pt-4 flex flex-wrap gap-4">
+      {task.taskImages.map((img: string, i: number) => (
+        <div
+          key={i}
+          className="w-32 h-24 rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:scale-105 transition"
+        >
+          <img
+            src={img}
+            alt="task"
+            className="w-full h-full object-cover"
+          />
         </div>
+      ))}
+    </div>
+  )}
+
+  <div className="flex flex-wrap gap-6 pt-4 border-t border-gray-50">
+
+    <div>
+      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+        Priority
+      </p>
+      <p className="text-xs font-black text-slate-800 uppercase italic tracking-tighter">
+        {task.priority || 'Standard'}
+      </p>
+    </div>
+
+    <div>
+      {/* <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+        Deadline
+      </p> */}
+      {/* <p className="text-xs font-black text-slate-800 tracking-tighter">
+        {task.dueDate
+          ? new Date(task.dueDate).toLocaleDateString()
+          : 'No Limit'}
+      </p> */}
+    </div>
+
+  </div>
+
+</div>
       </div>
 
       {/* 2. Main Analytics Grid */}
