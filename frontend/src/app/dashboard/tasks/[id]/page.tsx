@@ -99,7 +99,7 @@ export default function TaskDetailPage() {
   const fetchTask = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/tasks/${taskId}`);
+      const res = await api.get(`/tasks/${taskId}`); 
       setTask(res.data.data);
     } catch (err) {
       console.error("Failed to fetch task:", err);
