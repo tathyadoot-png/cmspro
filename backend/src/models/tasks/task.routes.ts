@@ -5,14 +5,17 @@ import {
   submitTask,
   approveTask,
   requestRevision,
-    getTasks,
-    updateTaskStatus
+  getTasks,
+  updateTaskStatus,
+  getTask
 } from "./task.controller";
 
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
 
 const router = Router();
+
+/* Create Task */
 
 router.post(
   "/",
@@ -21,12 +24,16 @@ router.post(
   createTask
 );
 
+/* Start Task */
+
 router.patch(
   "/:id/start",
   authMiddleware,
   requirePermission("TASK_START"),
   startTask
 );
+
+/* Submit Task */
 
 router.patch(
   "/:id/submit",
@@ -35,12 +42,16 @@ router.patch(
   submitTask
 );
 
+/* Approve Task */
+
 router.patch(
   "/:id/approve",
   authMiddleware,
   requirePermission("TASK_APPROVE"),
   approveTask
 );
+
+/* Request Revision */
 
 router.patch(
   "/:id/revision",
@@ -49,12 +60,7 @@ router.patch(
   requestRevision
 );
 
-// router.get(
-//   "/",
-//   authMiddleware,
-//   requirePermission("TASK_VIEW"),
-//   getTasks
-// );
+/* Get All Tasks */
 
 router.get(
   "/",
@@ -62,9 +68,20 @@ router.get(
   getTasks
 );
 
+/* 🔥 Get Single Task */
+
+router.get(
+  "/:id",
+  authMiddleware,
+  getTask
+);
+
+/* Update Task Status */
+
 router.patch(
   "/:id/status",
   authMiddleware,
   updateTaskStatus
 );
+
 export default router;

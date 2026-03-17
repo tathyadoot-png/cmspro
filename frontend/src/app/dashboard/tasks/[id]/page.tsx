@@ -1,60 +1,73 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
 import { useParams } from "next/navigation";
+import { api } from "@/lib/api";
 
 import TaskTimeline from "@/components/tasks/TaskTimeline";
+import TaskActivity from "@/components/tasks/TaskActivity";
 import TaskComments from "@/components/tasks/TaskComments";
 import TaskFiles from "@/components/tasks/TaskFiles";
-import TaskActivity from "@/components/tasks/TaskActivity";
 
-export default function TaskDetailPage(){
+export default function TaskDetailPage() {
 
-const { id } = useParams();
+  const params = useParams();
+  const taskId = params?.id;
 
-const [task,setTask] = useState<any>(null);
+  const [task,setTask] = useState<any>(null);
 
-useEffect(()=>{
- fetchTask();
-},[]);
+  useEffect(()=>{
+    if(taskId) fetchTask();
+  },[taskId]);
 
-const fetchTask = async ()=>{
+  const fetchTask = async () => {
 
- const res = await api.get(`/tasks/${id}`);
+    try{
 
- setTask(res.data.data);
+      const res = await api.get(`/tasks/${taskId}`);
 
-};
+      setTask(res.data.data);
 
-if(!task) return <div>Loading...</div>;
+    }catch(err){
 
-return(
+      console.error(err);
 
-<div className="space-y-6">
+    }
 
-<h1 className="text-xl font-semibold">
-{task.title}
-</h1>
+  };
 
-<p className="text-sm text-gray-500">
-{task.description}
-</p>
+  if(!task) return <div>Loading...</div>;
 
-<div className="grid md:grid-cols-2 gap-6">
+  return (
 
-<TaskTimeline task={task} />
+    <div className="space-y-6">
 
-<TaskActivity taskId={task._id} />
+      <div className="space-y-2">
 
-</div>
+        <h1 className="text-xl font-semibold">
+          {task.title}
+        </h1>
 
-<TaskComments taskId={task._id} />
+        <p className="text-sm text-gray-500">
+          {task.description}
+        </p>
 
-<TaskFiles taskId={task._id} />
+      </div>
 
-</div>
+      <div className="grid md:grid-cols-2 gap-6">
 
-);
+        <TaskTimeline task={task} />
+
+        <TaskActivity taskId={task._id} />
+
+      </div>
+
+      <TaskComments taskId={task._id} />
+
+      <TaskFiles taskId={task._id} />
+
+    </div>
+
+  );
 
 }

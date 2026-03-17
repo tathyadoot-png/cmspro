@@ -2,43 +2,70 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { socket } from "@/lib/socket";
 
 export default function ActivityPanel({ workshopId }: any) {
 
-  const [activity, setActivity] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {
+
+    if (!workshopId) return;
+
     fetchActivity();
-  }, []);
+
+    // join socket room
+    socket.emit("join-workshop", workshopId);
+
+    socket.on("NEW_ACTIVITY", (activity) => {
+      setActivities((prev) => [activity, ...prev]);
+    });
+
+    return () => {
+      socket.off("NEW_ACTIVITY");
+    };
+
+  }, [workshopId]);
 
   const fetchActivity = async () => {
 
     const res = await api.get(`/activity/workshop/${workshopId}`);
 
-    setActivity(res.data.data || []);
+    setActivities(res.data.data || []);
+
   };
+
+  if (activities.length === 0) {
+    return (
+      <div className="text-sm text-gray-500">
+        No activity yet
+      </div>
+    );
+  }
 
   return (
 
-    <div className="border rounded p-3">
+    <div className="space-y-3">
 
-      <h2 className="font-semibold mb-2">
-        Activity
-      </h2>
+      {activities.map((a: any) => (
 
-      <div className="space-y-1 text-sm">
+        <div key={a._id} className="border rounded p-3">
 
-        {activity.map((a: any) => (
+          <p className="text-sm">
+            <span className="font-semibold">
+              {a.userId?.name}
+            </span>{" "}
+            {a.message}
+          </p>
 
-          <div key={a._id}>
-            {a.actionType}
-          </div>
+          <p className="text-xs text-gray-500">
+            {new Date(a.createdAt).toLocaleString()}
+          </p>
 
-        ))}
+        </div>
 
-      </div>
+      ))}
 
     </div>
-
   );
 }

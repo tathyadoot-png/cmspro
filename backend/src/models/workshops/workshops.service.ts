@@ -3,6 +3,7 @@ import Client from "../clients/client.model";
 import { IUser } from "../users/user.model";
 import { generateWorkshopCode } from "../../utils/generateWorkshopCode";
 import mongoose from "mongoose";
+import Task from "../tasks/task.model";
 
 class WorkshopService {
 
@@ -16,12 +17,11 @@ class WorkshopService {
     if (!client)
       throw new Error("Client not found");
 
-    const members = [
-      ...(data.teamLeads || []),
-      ...(data.writers || []),
-      ...(data.editors || [])
-    ];
-
+ const members = Array.from(new Set([
+  ...(data.teamLeads || []),
+  ...(data.writers || []),
+  ...(data.editors || [])
+]));
     const workshop = await Workshop.create({
 
       workshopCode: generateWorkshopCode(),
@@ -66,24 +66,25 @@ class WorkshopService {
       query.members = currentUser._id;
     }
 
-    return Workshop.find(query)
-      .populate("clientId", "name clientType")
-      .populate("teamLeads", "name userCode")
-      .populate("writers", "name userCode")
-      .populate("editors", "name userCode")
-      .sort({ createdAt: -1 });
+return Workshop.find(query)
+  .populate("clientId", "name clientType")
+  .populate("teamLeads", "name userCode")
+  .populate("writers", "name userCode")
+  .populate("editors", "name userCode")
+  .populate("members", "name userCode")   // 👈 ADD THIS
+  .sort({ createdAt: -1 });
   }
 
- async getWorkshopById(id:string,currentUser:IUser){
+async getWorkshopById(id:string,currentUser:IUser){
 
 const workshop = await Workshop.findOne({
 _id:id,
 organizationId:currentUser.organizationId
 })
-.populate("members","name")
-.populate("writers","name")
-.populate("editors","name")
-.populate("teamLeads","name");
+.populate("members","name userCode")
+.populate("writers","name userCode")
+.populate("editors","name userCode")
+.populate("teamLeads","name userCode");
 
 if(!workshop)
 throw new Error("Workshop not found");
@@ -114,6 +115,75 @@ return workshop;
     return workshop;
 
   }
+
+async getWorkshopStats(workshopId: string, currentUser: IUser) {
+
+  const workshop = await Workshop.findOne({
+    _id: workshopId,
+    organizationId: currentUser.organizationId
+  });
+
+  if (!workshop)
+    throw new Error("Workshop not found");
+
+  const tasks = await Task.find({
+    workshopId,
+    organizationId: currentUser.organizationId
+  });
+
+  const totalTasks = tasks.length;
+
+  const completed = tasks.filter(
+    t => t.status === "COMPLETED"
+  ).length;
+
+  const inProgress = tasks.filter(
+    t => t.status === "IN_PROGRESS"
+  ).length;
+
+  const overdue = tasks.filter(
+    t => t.slaStatus === "OVERDUE"
+  ).length;
+
+  return {
+    totalTasks,
+    completed,
+    inProgress,
+    overdue,
+    members: workshop.members.length
+  };
+
+}
+  
+async assignTeamLead(
+  workshopId:string,
+  userId:string,
+  currentUser:IUser
+){
+
+  const workshop = await Workshop.findOne({
+    _id:workshopId,
+    organizationId:currentUser.organizationId
+  })
+
+  if(!workshop)
+    throw new Error("Workshop not found")
+
+  if(!workshop.members.some(m=>m.toString()===userId))
+    throw new Error("User must be workshop member")
+
+  workshop.teamLeads = [
+    ...new Set([
+      ...workshop.teamLeads.map(t=>t.toString()),
+      userId
+    ])
+  ].map(id=>new mongoose.Types.ObjectId(id))
+
+  await workshop.save()
+
+  return workshop
+
+}
 
 }
 

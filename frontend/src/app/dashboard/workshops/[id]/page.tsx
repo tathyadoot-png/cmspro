@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
-
-import TaskPanel from "./components/TaskPanel";
-import ChatPanel from "./components/ChatPanel";
+import PerformancePanel from "./components/PerformancePanel";
+import WorkshopHeader from "./components/WorkshopHeader";
+import WorkshopStats from "./components/WorkshopStats";
 import MembersPanel from "./components/MembersPanel";
 import ActivityPanel from "./components/ActivityPanel";
-
+import TLPanel from "./components/TLPanel";
+import CreateTaskPanel from "./components/CreateTaskPanel";
+import TaskPanel from "./components/TaskPanel";
 export default function WorkshopPage() {
 
   const params = useParams();
-  const workshopId = params.id as string;
+  const workshopId = params?.id;
 
   const [workshop, setWorkshop] = useState<any>(null);
+  const [tab, setTab] = useState("members");
 
   useEffect(() => {
     fetchWorkshop();
@@ -28,33 +31,51 @@ export default function WorkshopPage() {
 
   };
 
-  if (!workshop)
-    return <div className="p-6">Loading...</div>;
+  if (!workshop) return <div>Loading...</div>;
 
   return (
 
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-6">
 
-      <h1 className="text-2xl font-bold">
-        {workshop.workshopName}
-      </h1>
+      <WorkshopHeader workshop={workshop} />
 
-      <MembersPanel workshopId={workshopId} />
+      <WorkshopStats workshopId={workshopId} />
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* Tabs */}
 
-        <div className="col-span-2">
-          <TaskPanel workshopId={workshopId} />
-        </div>
+      <div className="flex gap-4 border-b pb-2">
 
-        <div className="space-y-4">
-          <ChatPanel workshopId={workshopId} />
-          <ActivityPanel workshopId={workshopId} />
-        </div>
+        <button onClick={()=>setTab("members")}>Members</button>
+        <button onClick={()=>setTab("tasks")}>Tasks</button>
+        <button onClick={()=>setTab("activity")}>Activity</button>
+<button onClick={()=>setTab("performance")}>
+  Performance
+</button>
 
+<button onClick={()=>setTab("createTask")}>
+Create Task
+</button>
       </div>
 
+      {tab === "members" && (
+<MembersPanel workshopId={workshopId} workshop={workshop} />
+      )}
+{tab === "performance" && (
+  <PerformancePanel workshopId={workshopId} />
+)}
+{tab === "activity" && (
+  <ActivityPanel workshopId={workshopId} />
+)}
+{tab === "teamlead" && (
+  <TLPanel workshopId={workshopId} />
+)}
+{tab === "createTask" && (
+<CreateTaskPanel workshop={workshop} />)}
+{tab === "tasks" && (
+  <TaskPanel workshopId={workshopId} />
+)}
     </div>
 
   );
+
 }

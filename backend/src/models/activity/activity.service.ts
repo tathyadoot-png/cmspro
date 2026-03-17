@@ -3,6 +3,7 @@ import { io } from "../../socket";
 
 export const logActivity = async (
   organizationId: string,
+  workshopId: string,
   userId: string,
   action: string,
   message: string,
@@ -11,13 +12,15 @@ export const logActivity = async (
 
   const activity = await Activity.create({
     organizationId,
+    workshopId,
     userId,
     action,
     message,
     taskId
   });
 
-  io.emit("NEW_ACTIVITY", activity);
+  // 🔥 Emit realtime event
+  io.to(workshopId.toString()).emit("NEW_ACTIVITY", activity);
 
   return activity;
 };

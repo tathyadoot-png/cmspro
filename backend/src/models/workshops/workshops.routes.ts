@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { addMembers, createWorkshop, getWorkshopById, getWorkshops } from "./workshops.controller";
+import { addMembers, assignTeamLead, createWorkshop, getWorkshopById, getWorkshops } from "./workshops.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
+import { getWorkshopStats } from "./workshops.controller";
 
 const router = Router();
 
@@ -33,11 +34,17 @@ requirePermission("WORKSHOP_UPDATE"),
 addMembers
 );
 
-
 router.get(
-  "/:id",
+  "/:id/stats",
   authMiddleware,
   requirePermission("WORKSHOP_VIEW"),
-  getWorkshopById
+  getWorkshopStats
+);
+
+router.post(
+  "/:id/teamlead",
+  authMiddleware,
+  requirePermission("WORKSHOP_UPDATE"),
+  assignTeamLead
 );
 export default router;

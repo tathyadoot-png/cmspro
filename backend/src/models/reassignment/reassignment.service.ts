@@ -1,8 +1,7 @@
 import Task from "../tasks/task.model";
 import User from "../users/user.model";
 import { IUser } from "../users/user.model";
-import { logActivity } from "../audit/audit.service";
-import { emitEscalation } from "../../socket";
+import { logActivity } from "../activity/activity.service";
 
 class ReassignmentService {
 
@@ -52,20 +51,14 @@ class ReassignmentService {
 
     await task.save();
 
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_REASSIGNED",
-      targetType: "TASK",
-      targetId: task._id,
-    });
-
-    emitEscalation({
-      type: "TASK_REASSIGNED",
-      taskId: task._id,
-      from: oldUser,
-      to: bestCandidate._id,
-    });
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "TASK_REASSIGNED",
+      `${currentUser.name} reassigned task`,
+      task._id.toString()
+    );
 
     return task;
   }

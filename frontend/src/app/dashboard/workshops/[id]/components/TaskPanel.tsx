@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-
+import Link from "next/link";
 const columns = [
   "ASSIGNED",
   "IN_PROGRESS",
@@ -16,7 +16,7 @@ export default function TaskPanel({ workshopId }: any) {
   const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchTasks();
+    if (workshopId) fetchTasks();
   }, [workshopId]);
 
   const fetchTasks = async () => {
@@ -37,7 +37,7 @@ export default function TaskPanel({ workshopId }: any) {
 
   return (
 
-    <div className="grid grid-cols-5 gap-3">
+    <div className="grid grid-cols-5 gap-4">
 
       {columns.map((col) => {
 
@@ -45,29 +45,53 @@ export default function TaskPanel({ workshopId }: any) {
 
         return (
 
-          <div key={col} className="bg-gray-50 border rounded p-2">
+          <div key={col} className="bg-gray-50 border rounded p-3">
 
-            <h3 className="font-semibold mb-2 text-sm">
-              {col}
+            <h3 className="font-semibold mb-3 text-sm">
+              {col.replace("_"," ")}
             </h3>
+
+            {colTasks.length === 0 && (
+              <p className="text-xs text-gray-400">
+                No tasks
+              </p>
+            )}
 
             {colTasks.map((task) => (
 
-              <div
-                key={task._id}
-                className="bg-white border rounded p-2 mb-2 text-sm"
-              >
-
-                <div className="font-medium">
-                  {task.title}
+            <div
+  key={task._id}
+  className={`border rounded p-3 mb-3 text-sm shadow-sm
+  ${
+    task.slaStatus === "OVERDUE"
+      ? "bg-red-50 border-red-400"
+      : "bg-white"
+  }`}
+>
+               <Link
+  href={`/dashboard/tasks/${task._id}`}
+  className="font-semibold text-blue-600"
+>
+  {task.title}
+</Link>
+                <div className="text-xs text-gray-500 mt-1">
+                  Assigned: {task.assignedTo?.name}
                 </div>
 
-                <div className="text-xs text-gray-500">
-                  {task.assignedTo?.name}
+                <div className="text-xs mt-1">
+                  Priority: {task.priority}
+                </div>
+
+                <div className="text-xs mt-1">
+                  SLA: {task.slaStatus}
+                </div>
+
+                <div className="text-xs mt-1">
+                  Est: {task.estimatedMinutes} min
                 </div>
 
                 <select
-                  className="mt-2 border text-xs"
+                  className="mt-2 border text-xs p-1 w-full"
                   value={task.status}
                   onChange={(e) =>
                     updateStatus(task._id, e.target.value)

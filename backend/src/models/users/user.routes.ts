@@ -8,6 +8,7 @@ import {
 
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requireRole } from "../../middleware/role.middleware";
+import { fetchUserStats } from "./userStats.controller";
 
 const router = Router();
 
@@ -37,6 +38,12 @@ router.delete(
   authMiddleware,
   requireRole(["SUPER_ADMIN","ADMIN"]),
   deleteUser
+);
+
+router.get(
+  "/:userId/stats",
+  authMiddleware,
+  fetchUserStats
 );
 
 export default router;

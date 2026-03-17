@@ -1,4 +1,5 @@
 import ActivityLog from "./activityLog.model";
+import Activity from "../activity/activity.model";
 
 export const logActivity = async ({
   organizationId,
@@ -27,15 +28,14 @@ export const logActivity = async ({
 };
 
 
-// 🔥 Get workshop activity
 export const getWorkshopActivity = async (
   workshopId: string,
   user: any
 ) => {
 
-  return ActivityLog.find({
+  return Activity.find({
     organizationId: user.organizationId,
-    targetId: workshopId
+    workshopId: workshopId
   })
   .populate("userId", "name email")
   .sort({ createdAt: -1 })

@@ -39,7 +39,14 @@ export interface ITask extends Document {
 
   submissionType?: SubmissionType;
   submissionData?: string;
+taskImages: {
+  type: [String],
+  default: []
+},
 
+referenceLink: {
+  type: String
+},
   ratingByTL?: number;
 
   // 🔥 SLA FIELD ADDED
@@ -125,7 +132,14 @@ description: String,
       enum: ["IMAGE", "LINK", "FILE", "TEXT"],
     },
 
-    submissionData: String,
+submissionData: String,
+
+taskImages: {
+  type: [String],
+  default: []
+},
+
+referenceLink: String,
 
     ratingByTL: {
       type: Number,
@@ -145,6 +159,7 @@ description: String,
       enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
       default: "SAFE",
     },
+    
   },
   { timestamps: true }
 );

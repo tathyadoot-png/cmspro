@@ -1,9 +1,9 @@
 import cloudinary from "./cloudinary";
 
-export const uploadImage = async(file:string)=>{
+export const uploadImage = async (file:string)=>{
 
  const result = await cloudinary.uploader.upload(file,{
-  folder:"workshop-chat"
+  folder:"tasks"
  });
 
  return result.secure_url;

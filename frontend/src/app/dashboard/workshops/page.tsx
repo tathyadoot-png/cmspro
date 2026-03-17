@@ -55,9 +55,13 @@ export default function WorkshopsPage() {
               {w.workshopName}
             </h2>
 
-            <p className="text-sm text-gray-500">
-              {w.projectCode}
-            </p>
+         <p className="text-sm text-gray-500">
+  {w.workshopCode}
+</p>
+
+<p className="text-sm text-gray-500">
+  Members: {w.members?.length || 0}
+</p>
 
           </Link>
 

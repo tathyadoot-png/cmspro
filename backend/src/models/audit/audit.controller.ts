@@ -31,3 +31,37 @@ export const fetchWorkshopActivity = async (
   }
 
 };
+
+
+export const getWorkshopActivityController = async (
+  req: Request,
+  res: Response
+) => {
+
+  try {
+
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    const activities = await getWorkshopActivity(
+      req.params.id as string,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      data: activities
+    });
+
+  } catch (error: any) {
+
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};

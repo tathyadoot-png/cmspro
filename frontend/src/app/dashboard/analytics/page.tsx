@@ -1,59 +1,93 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect,useState } from "react";
 import { api } from "@/lib/api";
+import ProductivityChart from "@/components/ProductivityChart";
 
-import WorkloadChart from "@/components/analytics/WorkloadChart";
-import BurnoutPanel from "@/components/analytics/BurnoutPanel";
-import WeeklyTrendChart from "@/components/analytics/WeeklyTrendChart";
-import SLACard from "@/components/analytics/SLACard";
-import ActivityFeed from "@/components/analytics/ActivityFeed";
+export default function AnalyticsPage(){
 
-export default function AnalyticsPage() {
-
-  const [workload,setWorkload] = useState([]);
-  const [burnout,setBurnout] = useState([]);
-  const [weeklyTrend,setWeeklyTrend] = useState([]);
-const [sla,setSla] = useState<any>(null);
-  const [activities,setActivities] = useState([]);
+  const [users,setUsers] = useState<any[]>([]);
 
   useEffect(()=>{
-
-    fetchData();
-
+    fetchLeaderboard();
   },[]);
 
-  const fetchData = async ()=>{
+  const fetchLeaderboard = async ()=>{
 
-    const workloadRes = await api.get("/dashboard/workload");
-    const burnoutRes = await api.get("/dashboard/burnout");
-    const trendRes = await api.get("/dashboard/trend/weekly");
-    const slaRes = await api.get("/dashboard/sla");
-    const activityRes = await api.get("/activity");
+    const res = await api.get(
+      "/analytics/leaderboard"
+    );
 
-    setWorkload(workloadRes.data.data);
-    setBurnout(burnoutRes.data.data);
-    setWeeklyTrend(trendRes.data.data);
-    setSla(slaRes.data.data);
-    setActivities(activityRes.data.data);
+    setUsers(res.data.data);
 
   };
+
+  // 👇 GRAPH DATA
+  const chartData = users.map((u:any)=>({
+    name: u.name,
+    tasks: u.completedTasks
+  }));
 
   return(
 
     <div className="space-y-6">
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <WorkloadChart data={workload} />
-        <BurnoutPanel data={burnout} />
-      </div>
+      <h1 className="text-xl font-semibold">
+        Performance Leaderboard
+      </h1>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <WeeklyTrendChart data={weeklyTrend} />
-        <SLACard data={sla} />
-      </div>
+      {/* LEADERBOARD TABLE */}
 
-      <ActivityFeed activities={activities} />
+      <table className="w-full border text-sm">
+
+        <thead>
+          <tr className="border-b">
+            <th className="p-2">Rank</th>
+            <th className="p-2">User</th>
+            <th className="p-2">Score</th>
+            <th className="p-2">Rating</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          {users.map((u,i)=>(
+            <tr key={u._id} className="border-b">
+
+              <td className="p-2">
+                #{i+1}
+              </td>
+
+              <td className="p-2">
+                {u.name}
+              </td>
+
+              <td className="p-2">
+                {u.performanceScore}
+              </td>
+
+              <td className="p-2">
+                {u.ratingTag}
+              </td>
+
+            </tr>
+          ))}
+
+        </tbody>
+
+      </table>
+
+      {/* 👇 PRODUCTIVITY GRAPH */}
+
+      <div>
+
+        <h2 className="font-semibold">
+          Productivity Graph
+        </h2>
+
+        <ProductivityChart data={chartData}/>
+
+      </div>
 
     </div>
 

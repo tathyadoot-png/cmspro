@@ -1,74 +1,106 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { socket } from "@/lib/socket";
 
-export default function TaskComments({taskId}:any){
+export default function TaskComments({ taskId }: any) {
 
-const [comments,setComments] = useState<any[]>([]);
-const [text,setText] = useState("");
+  const [comments,setComments] = useState<any[]>([]);
+  const [message,setMessage] = useState("");
 
-useEffect(()=>{
- fetchComments();
-},[]);
+  useEffect(()=>{
 
-const fetchComments = async ()=>{
+    fetchComments();
 
- const res = await api.get(`/tasks/${taskId}/comments`);
+    socket.emit("joinTask",taskId);
 
- setComments(res.data.data);
+    socket.on("NEW_COMMENT",(comment)=>{
 
-};
+      if(comment.taskId === taskId){
+        setComments(prev => [comment,...prev]);
+      }
 
-const addComment = async ()=>{
+    });
 
- await api.post(`/tasks/${taskId}/comments`,{
-  text
- });
+    return ()=>{
+      socket.off("NEW_COMMENT");
+    };
 
- setText("");
- fetchComments();
+  },[taskId]);
 
-};
+  const fetchComments = async () => {
 
-return(
+    const res = await api.get(`/task-comments/${taskId}`);
 
-<div className="bg-card p-4 rounded-lg space-y-3">
+    setComments(res.data.data);
 
-<h2 className="font-semibold">
-Comments
-</h2>
+  };
 
-<div className="space-y-2">
+  const sendComment = async () => {
 
-{comments.map((c)=>(
-<div key={c._id} className="border p-2 rounded text-sm">
-<b>{c.user?.name}</b>: {c.text}
-</div>
-))}
+    if(!message) return;
 
-</div>
+    await api.post("/task-comments",{
+      taskId,
+      message
+    });
 
-<div className="flex gap-2">
+    setMessage("");
 
-<input
-className="border p-2 rounded flex-1"
-placeholder="Write comment"
-value={text}
-onChange={(e)=>setText(e.target.value)}
-/>
+  };
 
-<button
-className="bg-primary text-white px-3 py-2 rounded"
-onClick={addComment}
->
-Send
-</button>
+  return (
 
-</div>
+    <div className="space-y-4">
 
-</div>
+      <h2 className="font-semibold">
+        Comments
+      </h2>
 
-);
+      <div className="space-y-3">
+
+        {comments.map((c:any)=> (
+
+          <div
+            key={c._id}
+            className="border rounded p-3"
+          >
+
+            <div className="text-sm font-semibold">
+              {c.userId?.name}
+            </div>
+
+            <div className="text-sm">
+              {c.message}
+            </div>
+
+          </div>
+
+        ))}
+
+      </div>
+
+      <div className="flex gap-2">
+
+        <input
+          value={message}
+          onChange={(e)=>setMessage(e.target.value)}
+          placeholder="Write comment..."
+          className="border p-2 flex-1"
+        />
+
+        <button
+          onClick={sendComment}
+          className="bg-black text-white px-4"
+        >
+          Send
+        </button>
+
+      </div>
+
+    </div>
+
+  );
 
 }

@@ -2,7 +2,7 @@ import Task from "./task.model";
 import { IUser } from "../users/user.model";
 import { canTransition } from "../../utils/taskStateMachine";
 import { calculateTaskTime } from "../../utils/timeCalculator";
-import { logActivity } from "../audit/audit.service";
+import { logActivity } from "../activity/activity.service";
 import User from "../users/user.model";
 import {
   calculatePerformanceScore,
@@ -11,10 +11,30 @@ import {
 import { calculateSLAStatus } from "../../utils/slaPredictor";
 import escalationService from "../escalation/escalation.service";
 import { predictDeadlineRisk } from "../../utils/aiDeadlinePredictor";
-import { io } from "../../socket";
+import Workshop from "../workshops/workshops.model";
+
 class TaskService {
 
   async createTask(data: any, currentUser: IUser) {
+
+    const workshop = await Workshop.findOne({
+      _id: data.workshopId,
+      organizationId: currentUser.organizationId
+    });
+
+    if (!workshop)
+      throw new Error("Workshop not found");
+
+    const isAdmin = currentUser.roles?.some(
+      (r: any) => r.name === "ADMIN" || r.name === "SUPER_ADMIN"
+    );
+
+    const isTL = workshop.teamLeads?.some(
+      (tl: any) => tl.toString() === currentUser._id.toString()
+    );
+
+    if (!isAdmin && !isTL)
+      throw new Error("Only workshop TL or Admin can assign tasks");
 
     const aiRisk = await predictDeadlineRisk(
       data.assignedTo,
@@ -22,19 +42,45 @@ class TaskService {
     );
 
     const task = await Task.create({
+
       organizationId: currentUser.organizationId,
-      clientId: data.clientId,
+
+      clientId: workshop.clientId,
+
       workshopId: data.workshopId,
+
       title: data.title,
+
       description: data.description,
+
       assignedBy: currentUser._id,
+
       assignedTo: data.assignedTo,
+
       status: "ASSIGNED",
+
       priority: data.priority || "MEDIUM",
+
       estimatedMinutes: data.estimatedMinutes,
+
       slaStatus: "SAFE",
+
       aiRiskLevel: aiRisk,
+
+      taskImages: data.taskImages || [],
+
+      referenceLink: data.referenceLink || ""
+
     });
+
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "TASK_CREATED",
+      `${currentUser.name} created task "${task.title}"`,
+      task._id.toString()
+    );
 
     return task;
   }
@@ -65,13 +111,14 @@ class TaskService {
 
     await task.save();
 
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_STARTED",
-      targetType: "TASK",
-      targetId: task._id,
-    });
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "TASK_STARTED",
+      `${currentUser.name} started task "${task.title}"`,
+      task._id.toString()
+    );
 
     return task;
   }
@@ -120,7 +167,6 @@ class TaskService {
 
     await task.save();
 
-    // 🔥 ESCALATION CHECK (SAFE VERSION)
     if (task.slaStatus === "AT_RISK") {
 
       const alreadyEscalated =
@@ -134,13 +180,14 @@ class TaskService {
       }
     }
 
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_SUBMITTED",
-      targetType: "TASK",
-      targetId: task._id,
-    });
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "TASK_SUBMITTED",
+      `${currentUser.name} submitted task "${task.title}"`,
+      task._id.toString()
+    );
 
     return task;
   }
@@ -157,11 +204,18 @@ class TaskService {
     if (!canTransition(task.status, "APPROVED"))
       throw new Error("Invalid state transition");
 
-    if (!currentUser.roles.some((role: any) =>
-      role.name === "ADMIN" || role.name === "TL"
-    )) {
-      throw new Error("Not authorized to approve");
-    }
+    const workshop = await Workshop.findById(task.workshopId);
+
+    const isAdmin = currentUser.roles?.some(
+      (r: any) => r.name === "ADMIN" || r.name === "SUPER_ADMIN"
+    );
+
+    const isTL = workshop?.teamLeads?.some(
+      (tl: any) => tl.toString() === currentUser._id.toString()
+    );
+
+    if (!isAdmin && !isTL)
+      throw new Error("Only workshop TL or Admin can approve tasks");
 
     task.status = "APPROVED";
     task.completedAt = new Date();
@@ -170,7 +224,15 @@ class TaskService {
 
     await task.save();
 
-    // 🔥 ESCALATION CHECK FOR LATE TASK
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "TASK_APPROVED",
+      `${currentUser.name} approved task "${task.title}"`,
+      task._id.toString()
+    );
+
     if (task.delayMinutes > 0) {
 
       const alreadyEscalated =
@@ -258,6 +320,15 @@ class TaskService {
 
     await task.save();
 
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      currentUser._id.toString(),
+      "REVISION_REQUESTED",
+      `${currentUser.name} requested revision for "${task.title}"`,
+      task._id.toString()
+    );
+
     return task;
   }
 
@@ -271,22 +342,37 @@ class TaskService {
     if (!task) throw new Error("Task not found");
 
     task.status = status as any;
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: user._id,
-      actionType: "TASK_STATUS_CHANGED",
-      targetType: "TASK",
-      targetId: task._id,
-    });
+
     await task.save();
 
-    // 🔥 Real-time update
-    io.to(task.workshopId.toString()).emit("TASK_UPDATED", {
-      taskId: task._id,
-      status: task.status
-    });
+    await logActivity(
+      task.organizationId.toString(),
+      task.workshopId.toString(),
+      user._id.toString(),
+      "TASK_STATUS_CHANGED",
+      `${user.name} changed status of "${task.title}" to ${status}`,
+      task._id.toString()
+    );
+
     return task;
   }
+
+  async getTask(taskId: string, currentUser: IUser) {
+
+  const task = await Task.findOne({
+    _id: taskId,
+    organizationId: currentUser.organizationId
+  })
+  .populate("assignedTo","name email")
+  .populate("assignedBy","name");
+
+  if(!task)
+    throw new Error("Task not found");
+
+  return task;
+
+}
+
 }
 
 export default new TaskService();

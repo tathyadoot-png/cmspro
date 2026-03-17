@@ -16,8 +16,19 @@ import performanceRoutes from "./models/analytics/performance.routes";
 import workshopRoutes from "./models/workshops/workshops.routes";
 import auditRoutes from "./models/audit/audit.routes";
 import messageRoutes from "./models/messages/messages.routes";
+import uploadRoutes from "./models/upload/upload.routes";
+import taskCommentRoutes from "./models/taskComments/taskComment.routes";
+import leaderboardRoutes from "./models/analytics/leaderboard.routes";
+import teamAnalyticsRoutes from "./models/analytics/teamAnalytics.routes";
+
+
 const router = Router();
 
+
+
+router.use("/analytics", teamAnalyticsRoutes);
+router.use("/analytics", leaderboardRoutes);
+router.use("/task-comments", taskCommentRoutes);
 router.use("/performance", performanceRoutes);
 
 router.use("/dashboard", dashboardRiskRoutes);
@@ -34,4 +45,5 @@ router.use("/roles", roleRoutes);
 router.use("/workshops", workshopRoutes);
 router.use("/activity", auditRoutes);
 router.use("/messages", messageRoutes);
+router.use("/upload",uploadRoutes);
 export default router;

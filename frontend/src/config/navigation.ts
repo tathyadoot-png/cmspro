@@ -46,4 +46,9 @@ export const navigation = [
     path: "/dashboard/analytics",
     permission: "USER_VIEW",
   },
+  {
+  label: "Team Dashboard",
+  path: "/dashboard/team",
+  permission: "TASK_VIEW" // ya jo use kar rahe ho
+}
 ];
