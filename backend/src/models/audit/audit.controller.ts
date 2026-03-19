@@ -32,19 +32,13 @@ export const fetchWorkshopActivity = async (
 
 };
 
-
-export const getWorkshopActivityController = async (
-  req: Request,
-  res: Response
-) => {
-
+export const getWorkshopActivityController = async (req: any, res: any) => {
   try {
 
-    if (!req.user)
-      return res.status(401).json({ success: false });
+    const workshopId = req.params.id;
 
     const activities = await getWorkshopActivity(
-      req.params.id as string,
+      workshopId,
       req.user
     );
 
@@ -54,14 +48,10 @@ export const getWorkshopActivityController = async (
     });
 
   } catch (error: any) {
-
     console.error(error);
-
     res.status(500).json({
       success: false,
       message: error.message
     });
-
   }
-
 };

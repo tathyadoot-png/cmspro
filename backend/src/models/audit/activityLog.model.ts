@@ -21,10 +21,11 @@ export interface IActivityLog extends Document {
 
   userId: Types.ObjectId; // who performed action
   actionType: ActionType;
-
+ workshopId: Types.ObjectId;
   targetType: "TASK" | "USER" | "CLIENT" | "PROJECT";
   targetId: Types.ObjectId;
-
+clientId?: Types.ObjectId; 
+metadata?: any; 
   oldValue?: any;
   newValue?: any;
 
@@ -65,13 +66,29 @@ const ActivityLogSchema = new Schema<IActivityLog>(
       required: true,
       index: true,
     },
+workshopId: {
+  type: Schema.Types.ObjectId,
+  ref: "Workshop",
+  index: true,
+},
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: "Client",
+      index: true,
+    },
 
+    metadata: {
+      duration: Number,
+      delay: Number,
+      status: String,
+    },
     oldValue: Schema.Types.Mixed,
     newValue: Schema.Types.Mixed,
 
     ipAddress: String,
     userAgent: String,
   },
+
   { timestamps: true }
 );
 

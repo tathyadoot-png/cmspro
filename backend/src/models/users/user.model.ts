@@ -23,7 +23,10 @@ lockUntil?: Date;
   averageCompletionMinutes: number;
   performanceScore: number;
   ratingTag: RatingTag;
-
+  currentActiveTasks: number;
+  lastTaskCompletedAt?: Date;
+  consistencyScore: number;
+permissions?: string[];
   lastLoginAt?: Date;
 }
 
@@ -75,7 +78,11 @@ lockUntil: { type: Date },
       type: Boolean,
       default: true,
     },
+currentActiveTasks: { type: Number, default: 0 },
 
+lastTaskCompletedAt: Date,
+
+consistencyScore: { type: Number, default: 0 },
     // Monitoring fields
     totalTasks: { type: Number, default: 0 },
     completedTasks: { type: Number, default: 0 },

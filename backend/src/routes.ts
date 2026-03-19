@@ -44,10 +44,10 @@ router.use("/users", userRoutes);
 router.use("/projects", projectRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/reassign", reassignmentRoutes);
-router.use("/activity", activityRoutes);
+router.use("/activity", activityRoutes); //lite
 router.use("/roles", roleRoutes);
 router.use("/workshops", workshopRoutes);
-router.use("/activity", auditRoutes);
+router.use("/audit", auditRoutes);
 router.use("/messages", messageRoutes);
 router.use("/upload",uploadRoutes);
 export default router;

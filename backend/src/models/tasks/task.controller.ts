@@ -2,6 +2,7 @@
 
   import { Request, Response } from "express";
   import taskService from "./task.service";
+import { TaskStatus } from "./task.model";
 
 
  export const createTask = async (req: Request, res: Response) => {
@@ -210,7 +211,8 @@ export const getTasks = async (req: Request, res: Response) => {
 
 export const updateTaskStatus = async (req: Request, res: Response) => {
   try {
-
+// console.log("📦 BODY:", req.body);
+// console.log("📦 STATUS RECEIVED:", req.body.status);
     if (!req.user)
       return res.status(401).json({ success: false });
 
@@ -223,7 +225,7 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
 
     const task = await taskService.updateTaskStatus(
       taskId,
-      status,
+     status as TaskStatus,
       req.user
     );
 

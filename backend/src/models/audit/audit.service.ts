@@ -1,5 +1,4 @@
 import ActivityLog from "./activityLog.model";
-import Activity from "../activity/activity.model";
 
 export const logActivity = async ({
   organizationId,
@@ -7,11 +6,15 @@ export const logActivity = async ({
   actionType,
   targetType,
   targetId,
+  clientId,
+  workshopId, // ✅ ADD THIS
   oldValue,
   newValue,
+  metadata,
   ipAddress,
   userAgent,
 }: any) => {
+  console.log("🧠 LOGGING ACTIVITY:", { metadata }); // ✅ DEBUG
 
   await ActivityLog.create({
     organizationId,
@@ -19,26 +22,29 @@ export const logActivity = async ({
     actionType,
     targetType,
     targetId,
+    clientId,
+    workshopId, // ✅ SAVE THIS
     oldValue,
     newValue,
+    metadata,
     ipAddress,
     userAgent,
   });
 
 };
 
-
 export const getWorkshopActivity = async (
   workshopId: string,
   user: any
 ) => {
 
-  return Activity.find({
+  return ActivityLog.find({
     organizationId: user.organizationId,
-    workshopId: workshopId
+    workshopId: workshopId, // 🔥 IMPORTANT
   })
-  .populate("userId", "name email")
+  .populate("userId", "name email userCode")
+  .populate("targetId", "title status")
   .sort({ createdAt: -1 })
-  .limit(20);
+  .limit(50);
 
 };

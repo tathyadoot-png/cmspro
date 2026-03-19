@@ -19,7 +19,7 @@ export interface ITask extends Document {
   workshopId: Types.ObjectId;
   title: string;
   description: string;
-
+isOnTime: boolean;
   assignedBy: Types.ObjectId;
   assignedTo: Types.ObjectId;
 
@@ -31,7 +31,7 @@ export interface ITask extends Document {
   startedAt?: Date;
   submittedAt?: Date;
   completedAt?: Date;
-
+  assignedAt?: Date;
   actualMinutes: number;
   delayMinutes: number;
 
@@ -39,10 +39,7 @@ export interface ITask extends Document {
 
   submissionType?: SubmissionType;
   submissionData?: string;
-taskImages: {
-  type: [String],
-  default: []
-},
+taskImages: string[];
 
 referenceLink: {
   type: String
@@ -51,7 +48,7 @@ referenceLink: {
 
   // 🔥 SLA FIELD ADDED
   slaStatus: SLAStatus;
-
+deadlineAt: Date
   createdAt: Date;
   updatedAt: Date;
   aiRiskLevel?: "SAFE" | "AT_RISK" | "HIGH_RISK";
@@ -104,7 +101,7 @@ description: String,
         "IN_REVIEW",
         "CHANGES_REQUESTED",
         "APPROVED",
-        "COMPLETED",
+        // "COMPLETED",
       ],
       default: "CREATED",
       index: true,
@@ -118,10 +115,18 @@ description: String,
 
     estimatedMinutes: { type: Number, required: true },
 
+assignedAt: {
+  type: Date,
+  default: Date.now,
+},
+
     startedAt: Date,
     submittedAt: Date,
     completedAt: Date,
-
+isOnTime: {
+  type: Boolean,
+  default: true,
+},
     actualMinutes: { type: Number, default: 0 },
     delayMinutes: { type: Number, default: 0 },
 
@@ -131,7 +136,6 @@ description: String,
       type: String,
       enum: ["IMAGE", "LINK", "FILE", "TEXT"],
     },
-
 submissionData: String,
 
 taskImages: {
@@ -159,7 +163,7 @@ referenceLink: String,
       enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
       default: "SAFE",
     },
-    
+    deadlineAt: Date
   },
   { timestamps: true }
 );

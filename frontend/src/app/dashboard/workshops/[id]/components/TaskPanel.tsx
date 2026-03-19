@@ -122,7 +122,6 @@
 
 // }
 
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -134,7 +133,7 @@ const columns = [
   "IN_PROGRESS",
   "IN_REVIEW",
   "APPROVED",
-  "CHANGES_REQUESTED"
+  // "CHANGES_REQUESTED"
 ];
 
 const columnTheme: any = {
@@ -157,15 +156,31 @@ export default function TaskPanel({ workshopId }: any) {
     setTasks(res.data.data || []);
   };
 
-  const updateStatus = async (taskId: string, status: string) => {
-    await api.patch(`/tasks/${taskId}/status`, { status });
-    fetchTasks();
-  };
+  // 🔥 UPDATED FUNCTION
+const updateStatus = async (taskId: string, status: string) => {
+  try {
+    console.log("🔥 SENDING STATUS:", status);
+
+    // 🔥 HANDLE APPROVE SEPARATELY
+    if (status === "APPROVED") {
+      await api.patch(`/tasks/${taskId}/approve`);
+    } else {
+      await api.patch(`/tasks/${taskId}/status`, { status });
+    }
+
+    await fetchTasks();
+
+    window.dispatchEvent(new Event("TASK_UPDATED"));
+
+  } catch (err: any) {
+    console.error("❌ ERROR:", err.response?.data || err.message);
+  }
+};
 
   return (
     <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar min-h-[70vh]">
       {columns.map((col) => {
-        const colTasks = tasks.filter((t) => t.status === col);
+        const colTasks = tasks?.filter((t) => t.status === col) || [];
 
         return (
           <div 
@@ -182,78 +197,87 @@ export default function TaskPanel({ workshopId }: any) {
               </span>
             </div>
 
-            {/* Tasks Container */}
+            {/* Tasks */}
             <div className="space-y-4 flex-1 overflow-y-auto max-h-[calc(100vh-300px)] pr-1 custom-scrollbar">
               {colTasks.length === 0 && (
                 <div className="border-2 border-dashed border-gray-100 rounded-[1.5rem] py-10 text-center">
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Dock Empty</p>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+                    Dock Empty
+                  </p>
                 </div>
               )}
 
               {colTasks.map((task) => {
                 const isOverdue = task.slaStatus === "OVERDUE";
-                
+
                 return (
                   <div
                     key={task._id}
                     className={`group relative bg-white border ${
-                      isOverdue ? "border-rose-200 shadow-rose-100/50" : "border-gray-100"
+                      isOverdue
+                        ? "border-rose-200 shadow-rose-100/50"
+                        : "border-gray-100"
                     } p-5 rounded-[1.5rem] shadow-[0_10px_20px_rgba(0,0,0,0.02)] hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1`}
                   >
                     {isOverdue && (
                       <div className="absolute top-0 right-5 -translate-y-1/2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
-                        Alert: Overdue
+                        Overdue
                       </div>
                     )}
 
                     <Link
                       href={`/dashboard/tasks/${task._id}`}
-                      className="block text-sm font-black text-slate-800 leading-tight mb-3 group-hover:text-rose-600 transition-colors"
+                      className="block text-sm font-black text-slate-800 leading-tight mb-3 hover:text-rose-600"
                     >
                       {task.title}
                     </Link>
 
-                    {/* Metadata Grid */}
+                    {/* Meta */}
                     <div className="grid grid-cols-2 gap-y-3 mb-4">
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Personnel</p>
-                        <p className="text-[10px] font-bold text-slate-600 truncate">{task.assignedTo?.name || "Unassigned"}</p>
+                      <div>
+                        <p className="text-[8px] font-black text-gray-400 uppercase">User</p>
+                        <p className="text-[10px] font-bold text-slate-600 truncate">
+                          {task.assignedTo?.name || "Unassigned"}
+                        </p>
                       </div>
-                      <div className="space-y-1 text-right">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Priority</p>
-                        <p className={`text-[10px] font-black uppercase ${task.priority === 'HIGH' || task.priority === 'URGENT' ? 'text-rose-500' : 'text-slate-600'}`}>
+
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-gray-400 uppercase">Priority</p>
+                        <p className="text-[10px] font-black text-slate-600">
                           {task.priority}
                         </p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">Time Limit</p>
-                        <p className="text-[10px] font-bold text-slate-600">{task.estimatedMinutes} Mins</p>
+
+                      <div>
+                        <p className="text-[8px] font-black text-gray-400 uppercase">Time</p>
+                        <p className="text-[10px] font-bold text-slate-600">
+                          {task.estimatedMinutes} min
+                        </p>
                       </div>
-                      <div className="space-y-1 text-right">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-tighter">SLA Rank</p>
-                        <p className={`text-[10px] font-bold ${isOverdue ? 'text-rose-600' : 'text-emerald-500'}`}>
+
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-gray-400 uppercase">SLA</p>
+                        <p className="text-[10px] font-bold">
                           {task.slaStatus}
                         </p>
                       </div>
                     </div>
 
-                    {/* Status Selector UI */}
-                    <div className="relative pt-2 border-t border-gray-50 mt-2">
-                      <select
-                        className="w-full bg-gray-50 border border-transparent rounded-xl px-3 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest outline-none focus:border-rose-500 focus:bg-white cursor-pointer appearance-none transition-all"
-                        value={task.status}
-                        onChange={(e) => updateStatus(task._id, e.target.value)}
-                      >
-                        {columns.map((s) => (
-                          <option key={s} value={s}>
-                            {s.replace("_", " ")}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-3 bottom-3 pointer-events-none opacity-30">
-                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M19 9l-7 7-7-7"/></svg>
-                      </div>
-                    </div>
+                    {/* Status Select */}
+                    <select
+                      disabled={task.status === "APPROVED"}
+                      value={task.status}
+                      onChange={(e) =>
+                        updateStatus(task._id, e.target.value)
+                      }
+                      className="w-full bg-gray-50 rounded-xl px-3 py-2 text-[9px] font-black uppercase"
+                    >
+                      {columns.map((s) => (
+                        <option key={s} value={s}>
+                          {s.replace("_", " ")}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 );
               })}

@@ -2,7 +2,7 @@ import Task from "./task.model";
 import { IUser } from "../users/user.model";
 import { canTransition } from "../../utils/taskStateMachine";
 import { calculateTaskTime } from "../../utils/timeCalculator";
-import { logActivity } from "../activity/activity.service";
+import { logActivity } from "../audit/audit.service";
 import User from "../users/user.model";
 import {
   calculatePerformanceScore,
@@ -12,7 +12,8 @@ import { calculateSLAStatus } from "../../utils/slaPredictor";
 import escalationService from "../escalation/escalation.service";
 import { predictDeadlineRisk } from "../../utils/aiDeadlinePredictor";
 import Workshop from "../workshops/workshops.model";
-
+import TimeLog from "../timeLogs/timeLog.model";
+import { TaskStatus } from "./task.model";
 class TaskService {
 
   async createTask(data: any, currentUser: IUser) {
@@ -22,8 +23,7 @@ class TaskService {
       organizationId: currentUser.organizationId
     });
 
-    if (!workshop)
-      throw new Error("Workshop not found");
+    if (!workshop) throw new Error("Workshop not found");
 
     const isAdmin = currentUser.roles?.some(
       (r: any) => r.name === "ADMIN" || r.name === "SUPER_ADMIN"
@@ -42,45 +42,47 @@ class TaskService {
     );
 
     const task = await Task.create({
-
       organizationId: currentUser.organizationId,
-
       clientId: workshop.clientId,
-
       workshopId: data.workshopId,
-
       title: data.title,
-
       description: data.description,
-
       assignedBy: currentUser._id,
-
       assignedTo: data.assignedTo,
-
       status: "ASSIGNED",
-
       priority: data.priority || "MEDIUM",
-
       estimatedMinutes: data.estimatedMinutes,
-
-      slaStatus: "SAFE",
-
       aiRiskLevel: aiRisk,
-
       taskImages: data.taskImages || [],
-
       referenceLink: data.referenceLink || ""
-
     });
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      currentUser._id.toString(),
-      "TASK_CREATED",
-      `${currentUser.name} created task "${task.title}"`,
-      task._id.toString()
+    // 🔥 SLA calculate after creation
+    task.slaStatus = "SAFE";
+
+    task.deadlineAt = new Date(
+      Date.now() + task.estimatedMinutes * 60 * 1000
     );
+
+    await task.save();
+    // ✅ Workload tracking
+    await User.findByIdAndUpdate(task.assignedTo, {
+      $inc: {
+        currentActiveTasks: 1,
+        totalTasks: 1   // 🔥 ADD THIS
+      }
+    });
+
+    // ✅ Activity Log
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: currentUser._id,
+      actionType: "TASK_CREATED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+    });
 
     return task;
   }
@@ -97,9 +99,16 @@ class TaskService {
     if (!task.assignedTo.equals(currentUser._id))
       throw new Error("Unauthorized");
 
+    // 🔥 ✅ ADD THIS BLOCK HERE (IMPORTANT)
+    if (task.status !== "ASSIGNED") {
+      throw new Error("Task already started or not allowed");
+    }
+
+    // existing validation (keep it)
     if (!canTransition(task.status, "IN_PROGRESS"))
       throw new Error("Invalid state transition");
 
+    // 🔥 STATUS CHANGE (no change here)
     task.status = "IN_PROGRESS";
     task.startedAt = new Date();
 
@@ -111,18 +120,26 @@ class TaskService {
 
     await task.save();
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      currentUser._id.toString(),
-      "TASK_STARTED",
-      `${currentUser.name} started task "${task.title}"`,
-      task._id.toString()
-    );
+    // ✅ TimeLog start
+    await TimeLog.create({
+      organizationId: task.organizationId,
+      taskId: task._id,
+      userId: currentUser._id,
+      startTime: new Date()
+    });
+
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: currentUser._id,
+      actionType: "TASK_STARTED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+    });
 
     return task;
   }
-
   async submitTask(taskId: string, submissionData: string, currentUser: IUser) {
 
     const task = await Task.findOne({
@@ -138,59 +155,85 @@ class TaskService {
     if (!canTransition(task.status, "IN_REVIEW"))
       throw new Error("Invalid state transition");
 
-    if (!task.startedAt)
-      throw new Error("Task not started");
+    if (!task.startedAt) {
+      task.startedAt = task.assignedAt || new Date();
+    }
 
     const now = new Date();
 
     const { actualMinutes, delayMinutes } =
-      calculateTaskTime(
-        task.startedAt,
-        now,
-        task.estimatedMinutes
-      );
+      calculateTaskTime(task.startedAt, now, task.estimatedMinutes);
 
     task.status = "IN_REVIEW";
     task.submittedAt = now;
     task.actualMinutes = actualMinutes;
     task.delayMinutes = delayMinutes;
+    task.isOnTime = delayMinutes <= 0;
+
     task.submissionData = submissionData;
     task.submissionType = submissionData?.startsWith("http")
       ? "LINK"
       : "TEXT";
 
-    task.slaStatus = calculateSLAStatus(
-      task.startedAt,
-      task.estimatedMinutes,
-      task.delayMinutes
-    );
-
+    if (task.delayMinutes > 0) {
+      task.slaStatus = "OVERDUE";
+    } else if (task.delayMinutes > -5) {
+      task.slaStatus = "AT_RISK";
+    } else {
+      task.slaStatus = "SAFE";
+    }
     await task.save();
 
-    if (task.slaStatus === "AT_RISK") {
+    // ✅ TimeLog end
+    const timeLog = await TimeLog.findOne({
+      taskId: task._id,
+      userId: currentUser._id,
+      endTime: null
+    });
 
+    if (timeLog) {
+      timeLog.endTime = new Date();
+      timeLog.duration =
+        (timeLog.endTime.getTime() - timeLog.startTime.getTime()) / 60000;
+      await timeLog.save();
+    }
+
+    // Escalation
+    if (task.slaStatus === "AT_RISK") {
       const alreadyEscalated =
         await escalationService.hasOpenEscalation(task._id);
 
       if (!alreadyEscalated) {
         await escalationService.createEscalation(
           task,
-          "Task is at risk of deadline breach"
+          "Task is at risk",
+          "SLA_RISK"
         );
       }
     }
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      currentUser._id.toString(),
-      "TASK_SUBMITTED",
-      `${currentUser.name} submitted task "${task.title}"`,
-      task._id.toString()
-    );
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: currentUser._id,
+      actionType: "TASK_SUBMITTED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+      metadata: {
+        duration: actualMinutes,
+        delay: delayMinutes,
+        status: task.slaStatus,
+      },
+    });
 
     return task;
   }
+
+
+
+
+
 
   async approveTask(taskId: string, currentUser: IUser) {
 
@@ -217,31 +260,51 @@ class TaskService {
     if (!isAdmin && !isTL)
       throw new Error("Only workshop TL or Admin can approve tasks");
 
-    task.status = "APPROVED";
-    task.completedAt = new Date();
-    task.slaStatus =
-      task.delayMinutes > 0 ? "OVERDUE" : "SAFE";
+   task.status = "APPROVED";
+task.completedAt = new Date();
 
+// 🔥 FIRST calculate delay
+if (task.deadlineAt && new Date() > task.deadlineAt) {
+  task.delayMinutes = Math.round(
+    (new Date().getTime() - task.deadlineAt.getTime()) / 60000
+  );
+}
+
+// 🔥 THEN SLA
+if (task.delayMinutes > 0) {
+  task.slaStatus = "OVERDUE";
+} else if (task.delayMinutes > -5) {
+  task.slaStatus = "AT_RISK";
+} else {
+  task.slaStatus = "SAFE";
+}
     await task.save();
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      currentUser._id.toString(),
-      "TASK_APPROVED",
-      `${currentUser.name} approved task "${task.title}"`,
-      task._id.toString()
-    );
+    // ✅ Workload reduce
+    await User.findByIdAndUpdate(task.assignedTo, {
+      $inc: { currentActiveTasks: -1 },
+      lastTaskCompletedAt: new Date()
+    });
+
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: currentUser._id,
+      actionType: "TASK_APPROVED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+    });
 
     if (task.delayMinutes > 0) {
-
       const alreadyEscalated =
         await escalationService.hasOpenEscalation(task._id);
 
       if (!alreadyEscalated) {
         await escalationService.createEscalation(
           task,
-          "Task completed after deadline"
+          "Task delayed",
+          "DELAY"
         );
       }
     }
@@ -252,55 +315,6 @@ class TaskService {
     );
 
     return task;
-  }
-
-  private async updateUserPerformance(userId: string, task: any) {
-
-    const user = await User.findById(userId);
-    if (!user) return;
-
-    user.completedTasks += 1;
-
-    if (task.delayMinutes <= 0)
-      user.onTimeTasks += 1;
-    else
-      user.lateTasks += 1;
-
-    const totalTime =
-      user.averageCompletionMinutes *
-      (user.completedTasks - 1) +
-      task.actualMinutes;
-
-    user.averageCompletionMinutes =
-      Math.round(totalTime / user.completedTasks);
-
-    const score = calculatePerformanceScore({
-      completedTasks: user.completedTasks,
-      onTimeTasks: user.onTimeTasks,
-      lateTasks: user.lateTasks,
-      totalRevisions: user.totalRevisions,
-    });
-
-    user.performanceScore = score;
-    user.ratingTag = getRatingTag(score);
-
-    await user.save();
-  }
-
-  async getTasks(currentUser: IUser, workshopId?: string) {
-
-    const query: any = {
-      organizationId: currentUser.organizationId
-    };
-
-    if (workshopId) {
-      query.workshopId = workshopId;
-    }
-
-    return Task.find(query)
-      .populate("assignedTo", "name email")
-      .sort({ createdAt: -1 });
-
   }
 
   async requestRevision(taskId: string, currentUser: IUser) {
@@ -320,19 +334,129 @@ class TaskService {
 
     await task.save();
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      currentUser._id.toString(),
-      "REVISION_REQUESTED",
-      `${currentUser.name} requested revision for "${task.title}"`,
-      task._id.toString()
-    );
+    // optional user revision tracking
+    // await User.findByIdAndUpdate(task.assignedTo, {
+    //   $inc: { totalRevisions: 1 }
+    // });
+
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: currentUser._id,
+      actionType: "REVISION_REQUESTED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+    });
 
     return task;
   }
 
-  async updateTaskStatus(taskId: string, status: string, user: IUser) {
+  async getTasks(currentUser: IUser, workshopId?: string) {
+
+    const query: any = {
+      organizationId: currentUser.organizationId
+    };
+
+    if (workshopId) {
+      query.workshopId = workshopId;
+    }
+
+    const tasks = await Task.find(query)
+      .populate("assignedTo", "name email")
+      .sort({ createdAt: -1 });
+
+    // 🔥 AUTO SLA UPDATE (IMPORTANT)
+    const now = Date.now();
+
+    for (let task of tasks) {
+
+      if (task.deadlineAt && task.status !== "APPROVED") {
+
+        const diff = task.deadlineAt.getTime() - now;
+
+        let newStatus: any = "SAFE";
+
+        if (diff < 0) newStatus = "OVERDUE";
+        else if (diff < 5 * 60 * 1000) newStatus = "AT_RISK";
+
+        // 🔥 only update if changed
+        if (task.slaStatus !== newStatus) {
+          task.slaStatus = newStatus;
+          await task.save(); // 🔥 IMPORTANT
+        }
+      }
+    }
+
+    return tasks;
+  }
+  async getTask(taskId: string, currentUser: IUser) {
+
+    const task = await Task.findOne({
+      _id: taskId,
+      organizationId: currentUser.organizationId
+    })
+      .populate("assignedTo", "name email")
+      .populate("assignedBy", "name");
+
+    if (!task) throw new Error("Task not found");
+
+    return task;
+  }
+
+  private async updateUserPerformance(userId: string, task: any) {
+
+    const user = await User.findById(userId);
+    if (!user) return;
+
+    user.completedTasks += 1;
+
+    if (task.delayMinutes <= 0) {
+      user.onTimeTasks += 1;
+    } else {
+      user.lateTasks += 1;
+    }
+
+    // 🔥 revision tracking
+    user.totalRevisions += task.revisionCount;
+
+    // 🔥 avg time
+    const totalTime =
+      user.averageCompletionMinutes *
+      (user.completedTasks - 1) +
+      task.actualMinutes;
+
+    user.averageCompletionMinutes =
+      Math.round(totalTime / user.completedTasks);
+
+    // 🔥 BASE SCORE
+    let score = calculatePerformanceScore({
+      completedTasks: user.completedTasks,
+      onTimeTasks: user.onTimeTasks,
+      lateTasks: user.lateTasks,
+      totalRevisions: user.totalRevisions,
+    });
+
+    // 🔥 BONUS / PENALTY SYSTEM
+    if (task.delayMinutes > 10) {
+      score -= 3; // heavy delay
+    }
+
+    if (task.delayMinutes < -5) {
+      score += 2; // fast work bonus
+    }
+
+    if (task.revisionCount > 0) {
+      score -= 1; // revision penalty
+    }
+const finalScore = Math.max(0, score);
+
+user.performanceScore = finalScore;
+user.ratingTag = getRatingTag(finalScore);
+
+    await user.save();
+  }
+  async updateTaskStatus(taskId: string, status: TaskStatus, user: IUser) {
 
     const task = await Task.findOne({
       _id: taskId,
@@ -341,37 +465,47 @@ class TaskService {
 
     if (!task) throw new Error("Task not found");
 
-    task.status = status as any;
+    // 🔥 ❌ BLOCK WRONG USAGE (IMPORTANT)
+    if (status === "APPROVED") {
+      throw new Error("Use approveTask API instead");
+    }
+
+    // 🔥 STRICT FLOW CONTROL
+    const allowedTransitions: any = {
+      ASSIGNED: ["IN_PROGRESS"],
+      IN_PROGRESS: ["IN_REVIEW"],
+      IN_REVIEW: ["CHANGES_REQUESTED"], // ❌ removed APPROVED from here
+    };
+
+    if (!allowedTransitions[task.status]?.includes(status)) {
+      throw new Error("Invalid status transition");
+    }
+
+    // 🔥 SAVE OLD VALUE (for audit log)
+    const oldStatus = task.status;
+
+    // 🔥 UPDATE
+    task.status = status;
 
     await task.save();
 
-    await logActivity(
-      task.organizationId.toString(),
-      task.workshopId.toString(),
-      user._id.toString(),
-      "TASK_STATUS_CHANGED",
-      `${user.name} changed status of "${task.title}" to ${status}`,
-      task._id.toString()
-    );
+    // 🔥 LOG WITH OLD + NEW VALUE
+    await logActivity({
+      organizationId: task.organizationId,
+      userId: user._id,
+      actionType: "TASK_STATUS_CHANGED",
+      targetType: "TASK",
+      targetId: task._id,
+      clientId: task.clientId,
+      workshopId: task.workshopId,
+      oldValue: oldStatus,   // 🔥 ADD THIS
+      newValue: status,
+      metadata: { newStatus: status },
+    });
 
     return task;
   }
 
-  async getTask(taskId: string, currentUser: IUser) {
-
-  const task = await Task.findOne({
-    _id: taskId,
-    organizationId: currentUser.organizationId
-  })
-  .populate("assignedTo","name email")
-  .populate("assignedBy","name");
-
-  if(!task)
-    throw new Error("Task not found");
-
-  return task;
-
-}
 
 }
 

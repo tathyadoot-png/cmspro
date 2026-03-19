@@ -134,8 +134,8 @@ async getWorkshopStats(workshopId: string, currentUser: IUser) {
   const totalTasks = tasks.length;
 
   const completed = tasks.filter(
-    t => t.status === "COMPLETED"
-  ).length;
+  t => t.status === "APPROVED"
+).length;
 
   const inProgress = tasks.filter(
     t => t.status === "IN_PROGRESS"

@@ -10,6 +10,7 @@ export interface IEscalation extends Document {
   status: EscalationStatus;
   createdAt: Date;
   updatedAt: Date;
+  triggerType: "DELAY" | "SLA_RISK";
 }
 
 const EscalationSchema = new Schema<IEscalation>(
@@ -40,6 +41,11 @@ const EscalationSchema = new Schema<IEscalation>(
       default: "OPEN",
       index: true,
     },
+    triggerType: {
+  type: String,
+  enum: ["DELAY", "SLA_RISK"],
+  default: "DELAY",
+},
   },
   { timestamps: true }
 );

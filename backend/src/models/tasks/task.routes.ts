@@ -15,8 +15,9 @@ import { requirePermission } from "../../middleware/permission.middleware";
 
 const router = Router();
 
-/* Create Task */
-
+/* ===========================
+   TASK CREATION
+=========================== */
 router.post(
   "/",
   authMiddleware,
@@ -24,8 +25,11 @@ router.post(
   createTask
 );
 
-/* Start Task */
+/* ===========================
+   TASK FLOW
+=========================== */
 
+// ▶ Start Task
 router.patch(
   "/:id/start",
   authMiddleware,
@@ -33,8 +37,7 @@ router.patch(
   startTask
 );
 
-/* Submit Task */
-
+// ▶ Submit Task
 router.patch(
   "/:id/submit",
   authMiddleware,
@@ -42,8 +45,7 @@ router.patch(
   submitTask
 );
 
-/* Approve Task */
-
+// ▶ Approve Task
 router.patch(
   "/:id/approve",
   authMiddleware,
@@ -51,8 +53,7 @@ router.patch(
   approveTask
 );
 
-/* Request Revision */
-
+// ▶ Request Revision
 router.patch(
   "/:id/revision",
   authMiddleware,
@@ -60,28 +61,32 @@ router.patch(
   requestRevision
 );
 
-/* Get All Tasks */
-
-router.get(
-  "/",
-  authMiddleware,
-  getTasks
-);
-
-/* 🔥 Get Single Task */
-
-router.get(
-  "/:id",
-  authMiddleware,
-  getTask
-);
-
-/* Update Task Status */
-
+// ▶ Generic Status Update (dropdown वाला)
 router.patch(
   "/:id/status",
   authMiddleware,
+  requirePermission("TASK_START"),
   updateTaskStatus
+);
+
+/* ===========================
+   TASK FETCH
+=========================== */
+
+// ▶ Get all tasks
+router.get(
+  "/",
+  authMiddleware,
+  requirePermission("TASK_VIEW"), // 🔥 ADD THIS (important)
+  getTasks
+);
+
+// ▶ Get single task
+router.get(
+  "/:id",
+  authMiddleware,
+  requirePermission("TASK_VIEW"), // 🔥 ADD THIS
+  getTask
 );
 
 export default router;

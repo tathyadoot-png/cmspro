@@ -7,42 +7,56 @@ import {
 } from "./user.controller";
 
 import { authMiddleware } from "../../middleware/auth.middleware";
-import { requireRole } from "../../middleware/role.middleware";
+import { requirePermission } from "../../middleware/permission.middleware";
 import { fetchUserStats } from "./userStats.controller";
 
 const router = Router();
 
+/* ===========================
+   USER MANAGEMENT
+=========================== */
+
+// ▶ Create User
 router.post(
   "/",
   authMiddleware,
-  requireRole(["SUPER_ADMIN","ADMIN"]),
+  requirePermission("USER_CREATE"),
   createUser
 );
 
+// ▶ Get All Users
 router.get(
   "/",
   authMiddleware,
-  requireRole(["SUPER_ADMIN","ADMIN"]),
+  requirePermission("USER_VIEW"),
   getUsers
 );
 
+// ▶ Update User
 router.put(
   "/:id",
   authMiddleware,
-  requireRole(["SUPER_ADMIN","ADMIN"]),
+  requirePermission("USER_UPDATE"),
   updateUser
 );
 
+// ▶ Delete User
 router.delete(
   "/:id",
   authMiddleware,
-  requireRole(["SUPER_ADMIN","ADMIN"]),
+  requirePermission("USER_DELETE"),
   deleteUser
 );
 
+/* ===========================
+   USER ANALYTICS
+=========================== */
+
+// ▶ User Stats
 router.get(
   "/:userId/stats",
   authMiddleware,
+  requirePermission("USER_VIEW"),
   fetchUserStats
 );
 

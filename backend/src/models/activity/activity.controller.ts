@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Activity from "./activity.model";
+import ActivityLog from "../audit/activityLog.model";
 
 export const getWorkshopActivity = async (req: Request, res: Response) => {
   try {
@@ -10,11 +10,12 @@ export const getWorkshopActivity = async (req: Request, res: Response) => {
 
     const workshopId = req.params.id;
 
-    const activities = await Activity.find({
+    const activities = await ActivityLog.find({
+      organizationId: req.user.organizationId,
       workshopId: workshopId,
-      organizationId: req.user.organizationId
     })
-    .populate("userId", "name email")
+    .populate("userId", "name email userCode")
+    .populate("targetId", "title status")
     .sort({ createdAt: -1 })
     .limit(20);
 
