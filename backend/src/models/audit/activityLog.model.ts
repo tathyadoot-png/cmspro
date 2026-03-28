@@ -11,6 +11,7 @@ export type ActionType =
   | "TASK_COMPLETED"
   | "REVISION_REQUESTED"
   | "STATUS_UPDATED"
+  | "TASK_STATUS_CHANGED" // ✅ ADD THIS
   | "USER_CREATED"
   | "ROLE_UPDATED"
   | "CLIENT_CREATED"
@@ -31,6 +32,14 @@ metadata?: any;
 
   ipAddress?: string;
   userAgent?: string;
+
+  snapshot?: {
+  status?: string;
+  assignedTo?: Types.ObjectId;
+  actualMinutes?: number;
+  delayMinutes?: number;
+  revisionCount?: number;
+};
 }
 
 const ActivityLogSchema = new Schema<IActivityLog>(
@@ -77,11 +86,25 @@ workshopId: {
       index: true,
     },
 
-    metadata: {
-      duration: Number,
-      delay: Number,
-      status: String,
-    },
+metadata: {
+  duration: Number,
+  delay: Number,
+  status: String,
+  efficiency: Number,
+  revisionCount: Number,
+  isOnTime: Boolean,
+  aiRisk: String,
+},
+snapshot: {
+  status: String,
+  assignedTo: {
+    type: Schema.Types.ObjectId,
+    ref: "User"
+  },
+  actualMinutes: Number,
+  delayMinutes: Number,
+  revisionCount: Number
+},
     oldValue: Schema.Types.Mixed,
     newValue: Schema.Types.Mixed,
 

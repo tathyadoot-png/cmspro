@@ -146,7 +146,7 @@ const columnTheme: any = {
 
 export default function TaskPanel({ workshopId }: any) {
   const [tasks, setTasks] = useState<any[]>([]);
-
+  const [time, setTime] = useState(Date.now());
   useEffect(() => {
     if (workshopId) fetchTasks();
   }, [workshopId]);
@@ -156,26 +156,45 @@ export default function TaskPanel({ workshopId }: any) {
     setTasks(res.data.data || []);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(Date.now()); // 🔥 re-render trigger
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+  const getTimeLeft = (deadline: string) => {
+    const diff = new Date(deadline).getTime() - Date.now();
+
+    if (diff <= 0) return "Overdue";
+
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    return `${mins}m ${secs}s`;
+  };
   // 🔥 UPDATED FUNCTION
-const updateStatus = async (taskId: string, status: string) => {
-  try {
-    console.log("🔥 SENDING STATUS:", status);
+  const updateStatus = async (taskId: string, status: string) => {
+    try {
+      console.log("🔥 SENDING STATUS:", status);
 
-    // 🔥 HANDLE APPROVE SEPARATELY
-    if (status === "APPROVED") {
-      await api.patch(`/tasks/${taskId}/approve`);
-    } else {
-      await api.patch(`/tasks/${taskId}/status`, { status });
+      // 🔥 HANDLE APPROVE SEPARATELY
+      if (status === "APPROVED") {
+        await api.patch(`/tasks/${taskId}/approve`);
+      } else {
+        await api.patch(`/tasks/${taskId}/status`, { status });
+      }
+
+      await fetchTasks();
+
+      window.dispatchEvent(new Event("TASK_UPDATED"));
+
+    } catch (err: any) {
+      console.error("❌ ERROR:", err.response?.data || err.message);
     }
-
-    await fetchTasks();
-
-    window.dispatchEvent(new Event("TASK_UPDATED"));
-
-  } catch (err: any) {
-    console.error("❌ ERROR:", err.response?.data || err.message);
-  }
-};
+  };
 
   return (
     <div className="flex gap-6 overflow-x-auto pb-6 custom-scrollbar min-h-[70vh]">
@@ -183,8 +202,8 @@ const updateStatus = async (taskId: string, status: string) => {
         const colTasks = tasks?.filter((t) => t.status === col) || [];
 
         return (
-          <div 
-            key={col} 
+          <div
+            key={col}
             className={`flex-shrink-0 w-80 bg-gray-50/50 rounded-[2rem] border-t-4 ${columnTheme[col] || 'border-t-gray-200'} p-5 flex flex-col`}
           >
             {/* Column Header */}
@@ -213,11 +232,10 @@ const updateStatus = async (taskId: string, status: string) => {
                 return (
                   <div
                     key={task._id}
-                    className={`group relative bg-white border ${
-                      isOverdue
+                    className={`group relative bg-white border ${isOverdue
                         ? "border-rose-200 shadow-rose-100/50"
                         : "border-gray-100"
-                    } p-5 rounded-[1.5rem] shadow-[0_10px_20px_rgba(0,0,0,0.02)] hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1`}
+                      } p-5 rounded-[1.5rem] shadow-[0_10px_20px_rgba(0,0,0,0.02)] hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1`}
                   >
                     {isOverdue && (
                       <div className="absolute top-0 right-5 -translate-y-1/2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
@@ -250,8 +268,15 @@ const updateStatus = async (taskId: string, status: string) => {
 
                       <div>
                         <p className="text-[8px] font-black text-gray-400 uppercase">Time</p>
-                        <p className="text-[10px] font-bold text-slate-600">
-                          {task.estimatedMinutes} min
+                        <p className={`text-[10px] font-bold ${task.slaStatus === "OVERDUE"
+                            ? "text-rose-500 animate-pulse"
+                            : task.slaStatus === "AT_RISK"
+                              ? "text-amber-500"
+                              : "text-slate-700"
+                          }`}>
+                          {task.deadlineAt
+                            ? getTimeLeft(task.deadlineAt)
+                            : "--"}
                         </p>
                       </div>
 

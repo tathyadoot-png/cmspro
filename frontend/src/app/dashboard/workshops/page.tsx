@@ -99,18 +99,18 @@ export default function WorkshopsPage() {
   };
 
   return (
-    <div className="p-10 max-w-[1600px] mx-auto min-h-screen bg-[#FDFDFD]">
+    <div className="p-4 md:p-10 max-w-[1600px] mx-auto min-h-screen bg-[#FDFDFD]">
       
       {/* Top Navigation Bar Style Header */}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-16">
-        <div className="relative">
-          <div className="absolute -left-4 top-0 w-1 h-full bg-rose-500 rounded-full" />
-          <h1 className="text-5xl font-black text-slate-900 tracking-tightest leading-none">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12 md:mb-16">
+        <div className="relative pl-4 md:pl-0">
+          <div className="absolute left-0 md:-left-4 top-0 w-1 h-full bg-rose-500 rounded-full" />
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tightest leading-none">
             WORK<span className="text-rose-600">SHOPS</span>
           </h1>
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-4">
             <span className="px-2 py-0.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-tighter rounded">PRO</span>
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.4em]">
+            <p className="text-[10px] md:text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] md:tracking-[0.4em]">
               Operational Environment Selection
             </p>
           </div>
@@ -118,9 +118,9 @@ export default function WorkshopsPage() {
 
         <Link
           href="/dashboard/workshops/create"
-          className="group relative overflow-hidden bg-[#1A1A1A] text-white px-10 py-5 rounded-full font-black text-[12px] uppercase tracking-[0.2em] transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl shadow-gray-300"
+          className="w-full md:w-auto group relative overflow-hidden bg-[#1A1A1A] text-white px-8 md:px-10 py-4 md:py-5 rounded-full font-black text-[11px] md:text-[12px] uppercase tracking-[0.2em] transition-all duration-500 hover:scale-105 active:scale-95 shadow-2xl shadow-gray-300 text-center"
         >
-          <span className="relative z-10 flex items-center gap-3">
+          <span className="relative z-10 flex items-center justify-center gap-3">
             <span className="text-xl leading-none">+</span> Create New Unit
           </span>
           <div className="absolute inset-0 bg-gradient-to-r from-rose-600 to-rose-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -128,58 +128,58 @@ export default function WorkshopsPage() {
       </div>
 
       {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-10">
         {workshops.map((w, index) => (
           <Link
             key={w._id}
             href={`/dashboard/workshops/${w._id}`}
-            className="group relative flex flex-col justify-between min-h-[320px] bg-white border border-slate-100 p-10 rounded-[3rem] transition-all duration-700 hover:border-rose-200 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.06)] overflow-hidden"
+            className="group relative flex flex-col justify-between min-h-[280px] md:min-h-[320px] bg-white border border-slate-100 p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] transition-all duration-700 hover:border-rose-200 shadow-[0_4px_20px_rgba(0,0,0,0.02)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.06)] overflow-hidden"
           >
             {/* Background Numbering */}
-            <span className="absolute -right-4 -top-8 text-[180px] font-black text-slate-50 opacity-[0.03] group-hover:text-rose-500 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none">
+            <span className="absolute -right-4 -top-4 md:-top-8 text-[120px] md:text-[180px] font-black text-slate-50 opacity-[0.03] group-hover:text-rose-500 group-hover:opacity-[0.05] transition-all duration-700 pointer-events-none">
               0{index + 1}
             </span>
 
             <div className="relative z-10">
-              <div className="flex justify-between items-start mb-10">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-slate-50 flex items-center justify-center text-slate-900 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500 group-hover:rotate-[10deg]">
-                  <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <div className="flex justify-between items-start mb-6 md:mb-10">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-[1rem] md:rounded-[1.5rem] bg-slate-50 flex items-center justify-center text-slate-900 group-hover:bg-rose-600 group-hover:text-white transition-all duration-500 group-hover:rotate-[10deg]">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" className="md:w-[28px] md:h-[28px]">
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" strokeLinecap="round"/>
                     <path d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-full uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                  <span className="text-[9px] md:text-[10px] font-black text-rose-500 bg-rose-50 px-3 py-1 rounded-full uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
                     Open Unit
                   </span>
                 </div>
               </div>
 
-              <h2 className="text-3xl font-black text-slate-900 tracking-tightest group-hover:translate-x-2 transition-transform duration-500">
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tightest group-hover:translate-x-2 transition-transform duration-500">
                 {w.workshopName}
               </h2>
               
-              <div className="mt-4 flex items-center gap-4">
-                <div className="h-[1px] w-8 bg-slate-200 group-hover:w-16 group-hover:bg-rose-500 transition-all duration-500" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
+              <div className="mt-3 md:mt-4 flex items-center gap-3 md:gap-4">
+                <div className="h-[1px] w-6 md:w-8 bg-slate-200 group-hover:w-16 group-hover:bg-rose-500 transition-all duration-500" />
+                <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">
                   {w.workshopCode}
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 mt-12 flex items-center justify-between">
+            <div className="relative z-10 mt-8 md:mt-12 flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Personnel</span>
+                <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Personnel</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-slate-900">
+                  <span className="text-lg md:text-xl font-black text-slate-900">
                     {w.members?.length || 0}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Active Members</span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Active Members</span>
                 </div>
               </div>
 
-              <div className="w-12 h-12 rounded-full border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-500">
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-500">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="md:w-[20px] md:h-[20px]">
                   <path d="M13 7l5 5m0 0l-5 5m5-5H6" strokeLinecap="round"/>
                 </svg>
               </div>
@@ -193,10 +193,10 @@ export default function WorkshopsPage() {
 
       {/* Empty State with "Terminal" feel */}
       {workshops.length === 0 && (
-        <div className="bg-[#1A1A1A] rounded-[3rem] p-20 text-center border border-white/5">
-          <p className="text-rose-500 font-mono text-sm mb-4 tracking-tighter">{"> SYSTEM_SCAN: NO_DATA_FOUND"}</p>
-          <h2 className="text-white text-2xl font-black uppercase tracking-widest">Initialization Required</h2>
-          <p className="text-gray-500 text-xs mt-4 max-w-md mx-auto leading-relaxed">
+        <div className="bg-[#1A1A1A] rounded-[2rem] md:rounded-[3rem] p-10 md:p-20 text-center border border-white/5 mt-10">
+          <p className="text-rose-500 font-mono text-xs md:text-sm mb-4 tracking-tighter">{"> SYSTEM_SCAN: NO_DATA_FOUND"}</p>
+          <h2 className="text-white text-xl md:text-2xl font-black uppercase tracking-widest">Initialization Required</h2>
+          <p className="text-gray-500 text-[10px] md:text-xs mt-4 max-w-md mx-auto leading-relaxed">
             Please create your first operational workshop unit to begin data synchronization and team management.
           </p>
         </div>

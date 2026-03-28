@@ -90,7 +90,6 @@
 // }
 
 
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -130,12 +129,12 @@ export default function CreateWorkshopPage() {
   };
 
   return (
-    <div className="p-8 max-w-2xl mx-auto min-h-screen">
+    <div className="p-4 md:p-8 max-w-2xl mx-auto min-h-screen">
       
       {/* --- Back Button --- */}
       <button 
         onClick={() => router.back()}
-        className="group flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 hover:text-rose-600 transition-colors"
+        className="group flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6 md:mb-8 hover:text-rose-600 transition-colors"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
           <path d="M19 12H5m0 0l7-7m-7 7l7 7" strokeLinecap="round" />
@@ -144,20 +143,20 @@ export default function CreateWorkshopPage() {
       </button>
 
       {/* --- Form Container --- */}
-      <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-[0_20px_60px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 shadow-[0_20px_60px_rgba(0,0,0,0.04)] overflow-hidden">
         
         {/* Dark Header */}
-        <div className="bg-[#1A1A1A] p-10 border-b border-white/5">
-          <h1 className="text-3xl font-black text-white tracking-tight">
+        <div className="bg-[#1A1A1A] p-6 md:p-10 border-b border-white/5">
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
             Initialize <span className="text-rose-600">Workshop</span>
           </h1>
-          <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-2">
+          <p className="text-[9px] md:text-[10px] text-gray-500 font-black uppercase tracking-[0.3em] mt-2">
             Configure new operational parameters
           </p>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-10 space-y-8">
+        <form onSubmit={handleSubmit} className="p-6 md:p-10 space-y-6 md:space-y-8">
           
           {/* Client Selection */}
           <div className="space-y-3">
@@ -218,7 +217,7 @@ export default function CreateWorkshopPage() {
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full group relative overflow-hidden bg-[#1A1A1A] text-white py-5 rounded-2xl font-black text-[12px] uppercase tracking-[0.2em] transition-all duration-300 hover:shadow-2xl hover:shadow-rose-200"
+              className="w-full group relative overflow-hidden bg-[#1A1A1A] text-white py-5 rounded-2xl font-black text-[11px] md:text-[12px] uppercase tracking-[0.2em] transition-all duration-300 hover:shadow-2xl hover:shadow-rose-200"
             >
               <span className="relative z-10 flex items-center justify-center gap-3">
                 Deploy Workshop Unit
@@ -233,13 +232,13 @@ export default function CreateWorkshopPage() {
         </form>
 
         {/* Subtle Footer Decor */}
-        <div className="px-10 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
+        <div className="px-6 md:px-10 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
           <div className="flex gap-1">
             <div className="w-1 h-1 rounded-full bg-rose-500" />
             <div className="w-1 h-1 rounded-full bg-gray-200" />
             <div className="w-1 h-1 rounded-full bg-gray-200" />
           </div>
-          <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
+          <span className="text-[8px] md:text-[9px] font-black text-gray-300 uppercase tracking-widest">
             System Protocol 4.0.2
           </span>
         </div>

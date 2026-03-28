@@ -14,7 +14,7 @@ export const generateAccessToken = (payload: object) => {
     payload,
     accessSecret,
     {
-      expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
+      expiresIn: process.env.JWT_ACCESS_EXPIRES || "15h",
     } as jwt.SignOptions
   );
 };

@@ -19,7 +19,7 @@ export interface ITask extends Document {
   workshopId: Types.ObjectId;
   title: string;
   description: string;
-isOnTime: boolean;
+  isOnTime: boolean;
   assignedBy: Types.ObjectId;
   assignedTo: Types.ObjectId;
 
@@ -37,20 +37,24 @@ isOnTime: boolean;
 
   revisionCount: number;
 
-  submissionType?: SubmissionType;
-  submissionData?: string;
-taskImages: string[];
+  taskImages: string[];
 
-referenceLink: {
-  type: String
-},
+  // ✅ NEW SYSTEM (ONLY THIS)
+  submissions: {
+    type: SubmissionType;
+    data: string;
+    submittedAt: Date;
+  }[];
+
+  referenceLink?: string;
   ratingByTL?: number;
 
-  // 🔥 SLA FIELD ADDED
   slaStatus: SLAStatus;
-deadlineAt: Date
+  deadlineAt: Date;
+
   createdAt: Date;
   updatedAt: Date;
+
   aiRiskLevel?: "SAFE" | "AT_RISK" | "HIGH_RISK";
 }
 
@@ -70,15 +74,16 @@ const TaskSchema = new Schema<ITask>(
       index: true,
     },
 
-workshopId: {
-  type: Schema.Types.ObjectId,
-  ref: "Workshop",
-  required: true,
-  index: true
-},
+    workshopId: {
+      type: Schema.Types.ObjectId,
+      ref: "Workshop",
+      required: true,
+      index: true,
+    },
 
-title: { type: String, required: true },
-description: String,
+    title: { type: String, required: true },
+    description: String,
+
     assignedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -101,7 +106,6 @@ description: String,
         "IN_REVIEW",
         "CHANGES_REQUESTED",
         "APPROVED",
-        // "COMPLETED",
       ],
       default: "CREATED",
       index: true,
@@ -115,35 +119,43 @@ description: String,
 
     estimatedMinutes: { type: Number, required: true },
 
-assignedAt: {
-  type: Date,
-  default: Date.now,
-},
+    assignedAt: {
+      type: Date,
+      default: Date.now,
+    },
 
     startedAt: Date,
     submittedAt: Date,
     completedAt: Date,
-isOnTime: {
-  type: Boolean,
-  default: true,
-},
+
+    isOnTime: {
+      type: Boolean,
+      default: true,
+    },
+
     actualMinutes: { type: Number, default: 0 },
     delayMinutes: { type: Number, default: 0 },
 
     revisionCount: { type: Number, default: 0 },
 
-    submissionType: {
-      type: String,
-      enum: ["IMAGE", "LINK", "FILE", "TEXT"],
+    // ✅ FINAL CLEAN STRUCTURE
+    submissions: [
+      {
+        type: {
+          type: String,
+          enum: ["IMAGE", "LINK", "FILE", "TEXT"],
+        },
+        data: String,
+        submittedAt: Date,
+      },
+    ],
+
+    taskImages: {
+      type: [String],
+      default: [],
     },
-submissionData: String,
 
-taskImages: {
-  type: [String],
-  default: []
-},
-
-referenceLink: String,
+    referenceLink: String,
 
     ratingByTL: {
       type: Number,
@@ -151,19 +163,20 @@ referenceLink: String,
       max: 5,
     },
 
-    // 🔥 SLA FIELD SCHEMA
     slaStatus: {
       type: String,
       enum: ["SAFE", "AT_RISK", "OVERDUE"],
       default: "SAFE",
       index: true,
     },
+
     aiRiskLevel: {
       type: String,
       enum: ["SAFE", "AT_RISK", "HIGH_RISK"],
       default: "SAFE",
     },
-    deadlineAt: Date
+
+    deadlineAt: Date,
   },
   { timestamps: true }
 );
@@ -173,4 +186,5 @@ TaskSchema.index({ assignedTo: 1, status: 1 });
 TaskSchema.index({ clientId: 1, status: 1 });
 TaskSchema.index({ workshopId: 1, status: 1 });
 TaskSchema.index({ workshopId: 1, assignedTo: 1 });
+
 export default mongoose.model<ITask>("Task", TaskSchema);

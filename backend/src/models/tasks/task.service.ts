@@ -170,10 +170,16 @@ class TaskService {
     task.delayMinutes = delayMinutes;
     task.isOnTime = delayMinutes <= 0;
 
-    task.submissionData = submissionData;
-    task.submissionType = submissionData?.startsWith("http")
-      ? "LINK"
-      : "TEXT";
+    if (!task.submissions) {
+      task.submissions = [];
+    }
+
+    task.submissions.push({
+      type: submissionData?.startsWith("http") ? "LINK" : "TEXT",
+      data: submissionData,
+      submittedAt: new Date()
+    });
+
 
     if (task.delayMinutes > 0) {
       task.slaStatus = "OVERDUE";
@@ -220,11 +226,22 @@ class TaskService {
       targetId: task._id,
       clientId: task.clientId,
       workshopId: task.workshopId,
+
       metadata: {
         duration: actualMinutes,
         delay: delayMinutes,
         status: task.slaStatus,
+        isOnTime: task.isOnTime,
+        revisionCount: task.revisionCount
       },
+
+      snapshot: {
+        status: task.status,
+        assignedTo: task.assignedTo,
+        actualMinutes: task.actualMinutes,
+        delayMinutes: task.delayMinutes,
+        revisionCount: task.revisionCount
+      }
     });
 
     return task;
@@ -260,24 +277,24 @@ class TaskService {
     if (!isAdmin && !isTL)
       throw new Error("Only workshop TL or Admin can approve tasks");
 
-   task.status = "APPROVED";
-task.completedAt = new Date();
+    task.status = "APPROVED";
+    task.completedAt = new Date();
 
-// 🔥 FIRST calculate delay
-if (task.deadlineAt && new Date() > task.deadlineAt) {
-  task.delayMinutes = Math.round(
-    (new Date().getTime() - task.deadlineAt.getTime()) / 60000
-  );
-}
+    // 🔥 FIRST calculate delay
+    if (task.deadlineAt && new Date() > task.deadlineAt) {
+      task.delayMinutes = Math.round(
+        (new Date().getTime() - task.deadlineAt.getTime()) / 60000
+      );
+    }
 
-// 🔥 THEN SLA
-if (task.delayMinutes > 0) {
-  task.slaStatus = "OVERDUE";
-} else if (task.delayMinutes > -5) {
-  task.slaStatus = "AT_RISK";
-} else {
-  task.slaStatus = "SAFE";
-}
+    // 🔥 THEN SLA
+    if (task.delayMinutes > 0) {
+      task.slaStatus = "OVERDUE";
+    } else if (task.delayMinutes > -5) {
+      task.slaStatus = "AT_RISK";
+    } else {
+      task.slaStatus = "SAFE";
+    }
     await task.save();
 
     // ✅ Workload reduce
@@ -449,10 +466,10 @@ if (task.delayMinutes > 0) {
     if (task.revisionCount > 0) {
       score -= 1; // revision penalty
     }
-const finalScore = Math.max(0, score);
+    const finalScore = Math.max(0, score);
 
-user.performanceScore = finalScore;
-user.ratingTag = getRatingTag(finalScore);
+    user.performanceScore = finalScore;
+    user.ratingTag = getRatingTag(finalScore);
 
     await user.save();
   }

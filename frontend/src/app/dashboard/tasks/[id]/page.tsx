@@ -103,16 +103,15 @@ export default function TaskDetailPage() {
 
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [, forceUpdate] = useState(0);
+const [time, setTime] = useState(Date.now());
 
-  // 🔥 live countdown
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate((p) => p + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+useEffect(() => {
+  const interval = setInterval(() => {
+    setTime(Date.now());
+  }, 1000);
 
+  return () => clearInterval(interval);
+}, []);
   useEffect(() => {
     if (taskId) fetchTask();
   }, [taskId]);
