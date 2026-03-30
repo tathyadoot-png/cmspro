@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import workshopService from "./workshops.service";
 import { emitActivity } from "../../utils/activity.engine";
 import { ACTIVITY } from "../../constants/activityTypes"; 
-
+import { logActivity } from "../audit/audit.service"; 
 
 export const createWorkshop = async (req: Request, res: Response) => {
   try {
@@ -15,13 +15,17 @@ export const createWorkshop = async (req: Request, res: Response) => {
       req.user
     );
 
-    // 🔥 Auto Activity Log
-    await emitActivity({
+    // 🔥 NEW CLEAN ACTIVITY LOG
+    await logActivity({
       organizationId: req.user.organizationId,
-      workshopId: workshop._id,
       userId: req.user._id,
-      action: ACTIVITY.WORKSHOP_CREATED,
-      message: `${req.user.name} created workshop "${workshop.workshopName}"`
+      actionType: "PROJECT_CREATED", // ✅ use existing enum
+      targetType: "PROJECT",
+      targetId: workshop._id,
+      workshopId: workshop._id,
+      metadata: {
+        name: workshop.workshopName
+      }
     });
 
     res.status(201).json({
@@ -180,3 +184,52 @@ export const assignTeamLead = async (req:Request,res:Response)=>{
   }
 
 }
+
+
+export const updateWorkshop = async (req: Request, res: Response) => {
+  try {
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    const workshop = await workshopService.updateWorkshop(
+      req.params.id as string,
+      req.body,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      data: workshop,
+    });
+
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};  
+
+
+export const deleteWorkshop = async (req: Request, res: Response) => {
+  try {
+    if (!req.user)
+      return res.status(401).json({ success: false });
+
+    await workshopService.deleteWorkshop(
+      req.params.id as string,
+      req.user
+    );
+
+    res.json({
+      success: true,
+      message: "Workshop deleted successfully",
+    });
+
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

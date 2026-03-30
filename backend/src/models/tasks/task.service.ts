@@ -252,87 +252,92 @@ class TaskService {
 
 
 
-  async approveTask(taskId: string, currentUser: IUser) {
+async approveTask(taskId: string, currentUser: IUser) {
 
-    const task = await Task.findOne({
-      _id: taskId,
-      organizationId: currentUser.organizationId,
-    });
+  const task = await Task.findOne({
+    _id: taskId,
+    organizationId: currentUser.organizationId,
+  });
 
-    if (!task) throw new Error("Task not found");
+  if (!task) throw new Error("Task not found");
 
-    if (!canTransition(task.status, "APPROVED"))
-      throw new Error("Invalid state transition");
+  if (!canTransition(task.status, "APPROVED"))
+    throw new Error("Invalid state transition");
 
-    const workshop = await Workshop.findById(task.workshopId);
+  const workshop = await Workshop.findById(task.workshopId);
 
-    const isAdmin = currentUser.roles?.some(
-      (r: any) => r.name === "ADMIN" || r.name === "SUPER_ADMIN"
-    );
+  const isAdmin = currentUser.roles?.some(
+    (r: any) => r.name === "ADMIN" || r.name === "SUPER_ADMIN"
+  );
 
-    const isTL = workshop?.teamLeads?.some(
-      (tl: any) => tl.toString() === currentUser._id.toString()
-    );
+  const isTL = workshop?.teamLeads?.some(
+    (tl: any) => tl.toString() === currentUser._id.toString()
+  );
 
-    if (!isAdmin && !isTL)
-      throw new Error("Only workshop TL or Admin can approve tasks");
+  if (!isAdmin && !isTL)
+    throw new Error("Only workshop TL or Admin can approve tasks");
 
-    task.status = "APPROVED";
-    task.completedAt = new Date();
+  // ✅ STATUS UPDATE
+  task.status = "APPROVED";
+  task.completedAt = new Date();
 
-    // 🔥 FIRST calculate delay
-    if (task.deadlineAt && new Date() > task.deadlineAt) {
-      task.delayMinutes = Math.round(
-        (new Date().getTime() - task.deadlineAt.getTime()) / 60000
-      );
-    }
+  // ❌ REMOVED: duplicate time calculation
+  // (actualMinutes & delayMinutes already calculated in submitTask)
 
-    // 🔥 THEN SLA
-    if (task.delayMinutes > 0) {
+  // ✅ FINAL SLA CHECK (safe)
+  if (task.deadlineAt && task.completedAt) {
+    const completed = new Date(task.completedAt).getTime();
+    const deadline = new Date(task.deadlineAt).getTime();
+
+    if (completed > deadline) {
       task.slaStatus = "OVERDUE";
-    } else if (task.delayMinutes > -5) {
-      task.slaStatus = "AT_RISK";
     } else {
       task.slaStatus = "SAFE";
     }
-    await task.save();
-
-    // ✅ Workload reduce
-    await User.findByIdAndUpdate(task.assignedTo, {
-      $inc: { currentActiveTasks: -1 },
-      lastTaskCompletedAt: new Date()
-    });
-
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_APPROVED",
-      targetType: "TASK",
-      targetId: task._id,
-      clientId: task.clientId,
-      workshopId: task.workshopId,
-    });
-
-    if (task.delayMinutes > 0) {
-      const alreadyEscalated =
-        await escalationService.hasOpenEscalation(task._id);
-
-      if (!alreadyEscalated) {
-        await escalationService.createEscalation(
-          task,
-          "Task delayed",
-          "DELAY"
-        );
-      }
-    }
-
-    await this.updateUserPerformance(
-      task.assignedTo.toString(),
-      task
-    );
-
-    return task;
   }
+
+  await task.save();
+
+  // ✅ Workload reduce
+  await User.findByIdAndUpdate(task.assignedTo, {
+    $inc: { currentActiveTasks: -1 },
+    lastTaskCompletedAt: new Date()
+  });
+
+  await logActivity({
+    organizationId: task.organizationId,
+    userId: currentUser._id,
+    actionType: "TASK_APPROVED",
+    targetType: "TASK",
+    targetId: task._id,
+    clientId: task.clientId,
+    workshopId: task.workshopId,
+  });
+
+  // ✅ Escalation (unchanged)
+  if (task.delayMinutes > 0) {
+    const alreadyEscalated =
+      await escalationService.hasOpenEscalation(task._id);
+
+    if (!alreadyEscalated) {
+      await escalationService.createEscalation(
+        task,
+        "Task delayed",
+        "DELAY"
+      );
+    }
+  }
+
+  // ✅ Performance update (unchanged)
+  await this.updateUserPerformance(
+    task.assignedTo.toString(),
+    task
+  );
+
+  return task;
+}
+
+
 
   async requestRevision(taskId: string, currentUser: IUser) {
 

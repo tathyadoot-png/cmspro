@@ -1,6 +1,21 @@
 import { Request, Response } from "express";
 import authService from "./auth.service";
 
+/* ✅ Helper: convert "7h" → milliseconds */
+const parseExpiry = (value: string | undefined, fallbackHours = 7) => {
+  if (!value) return fallbackHours * 60 * 60 * 1000;
+
+  if (value.endsWith("h")) {
+    return parseInt(value) * 60 * 60 * 1000;
+  }
+
+  if (value.endsWith("m")) {
+    return parseInt(value) * 60 * 1000;
+  }
+
+  return fallbackHours * 60 * 60 * 1000;
+};
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -8,20 +23,23 @@ export const login = async (req: Request, res: Response) => {
     const { accessToken, refreshToken, user } =
       await authService.login(email, password);
 
-    /* 🔥 FIXED COOKIES (PRODUCTION READY) */
+    /* 🔥 FIXED COOKIE EXPIRY (SYNC WITH JWT) */
+
+    const accessMaxAge = parseExpiry(process.env.JWT_ACCESS_EXPIRES, 7);
+    const refreshMaxAge = 7 * 24 * 60 * 60 * 1000;
 
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: true,              // 🔥 MUST for production
-      sameSite: "none",          // 🔥 MUST for cross-domain
-      maxAge: 15 * 60 * 1000,
+      secure: true,
+      sameSite: "none",
+      maxAge: accessMaxAge, // ✅ अब 15 min नहीं → .env से control
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,              // 🔥 MUST
-      sameSite: "none",          // 🔥 MUST
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true,
+      sameSite: "none",
+      maxAge: refreshMaxAge,
     });
 
     res.json({
@@ -50,7 +68,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     user: req.user,
   });
 };
-
 
 export const logout = async (req: Request, res: Response) => {
   try {

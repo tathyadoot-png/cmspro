@@ -121,7 +121,6 @@
 //   );
 
 // }
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -133,7 +132,6 @@ const columns = [
   "IN_PROGRESS",
   "IN_REVIEW",
   "APPROVED",
-  // "CHANGES_REQUESTED"
 ];
 
 const columnTheme: any = {
@@ -141,12 +139,12 @@ const columnTheme: any = {
   IN_PROGRESS: "border-t-blue-500",
   IN_REVIEW: "border-t-amber-500",
   APPROVED: "border-t-emerald-500",
-  CHANGES_REQUESTED: "border-t-rose-500"
 };
 
 export default function TaskPanel({ workshopId }: any) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [time, setTime] = useState(Date.now());
+
   useEffect(() => {
     if (workshopId) fetchTasks();
   }, [workshopId]);
@@ -158,12 +156,11 @@ export default function TaskPanel({ workshopId }: any) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTime(Date.now()); // 🔥 re-render trigger
+      setTime(Date.now());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
-
 
   const getTimeLeft = (deadline: string) => {
     const diff = new Date(deadline).getTime() - Date.now();
@@ -175,12 +172,9 @@ export default function TaskPanel({ workshopId }: any) {
 
     return `${mins}m ${secs}s`;
   };
-  // 🔥 UPDATED FUNCTION
+
   const updateStatus = async (taskId: string, status: string) => {
     try {
-      console.log("🔥 SENDING STATUS:", status);
-
-      // 🔥 HANDLE APPROVE SEPARATELY
       if (status === "APPROVED") {
         await api.patch(`/tasks/${taskId}/approve`);
       } else {
@@ -188,11 +182,10 @@ export default function TaskPanel({ workshopId }: any) {
       }
 
       await fetchTasks();
-
       window.dispatchEvent(new Event("TASK_UPDATED"));
 
     } catch (err: any) {
-      console.error("❌ ERROR:", err.response?.data || err.message);
+      console.error(err.response?.data || err.message);
     }
   };
 
@@ -204,28 +197,20 @@ export default function TaskPanel({ workshopId }: any) {
         return (
           <div
             key={col}
-            className={`flex-shrink-0 w-80 bg-gray-50/50 rounded-[2rem] border-t-4 ${columnTheme[col] || 'border-t-gray-200'} p-5 flex flex-col`}
+            className={`flex-shrink-0 w-80 bg-gray-50/50 rounded-[2rem] border-t-4 ${columnTheme[col]} p-5 flex flex-col`}
           >
-            {/* Column Header */}
+
+            {/* Header */}
             <div className="flex justify-between items-center mb-6 px-2">
               <h3 className="font-black text-[11px] text-slate-900 uppercase tracking-[0.2em]">
                 {col.replace("_", " ")}
               </h3>
-              <span className="bg-white border border-gray-200 text-slate-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm">
+              <span className="bg-white border text-slate-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                 {colTasks.length}
               </span>
             </div>
 
-            {/* Tasks */}
-            <div className="space-y-4 flex-1 overflow-y-auto max-h-[calc(100vh-300px)] pr-1 custom-scrollbar">
-              {colTasks.length === 0 && (
-                <div className="border-2 border-dashed border-gray-100 rounded-[1.5rem] py-10 text-center">
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
-                    Dock Empty
-                  </p>
-                </div>
-              )}
-
+            <div className="space-y-4 flex-1 overflow-y-auto max-h-[calc(100vh-300px)] pr-1">
               {colTasks.map((task) => {
                 const isOverdue = task.slaStatus === "OVERDUE";
 
@@ -233,28 +218,40 @@ export default function TaskPanel({ workshopId }: any) {
                   <div
                     key={task._id}
                     className={`group relative bg-white border ${isOverdue
-                        ? "border-rose-200 shadow-rose-100/50"
-                        : "border-gray-100"
-                      } p-5 rounded-[1.5rem] shadow-[0_10px_20px_rgba(0,0,0,0.02)] hover:shadow-xl hover:shadow-gray-200/40 transition-all duration-300 hover:-translate-y-1`}
+                      ? "border-rose-200 shadow-rose-100/50"
+                      : "border-gray-100"
+                      } p-5 rounded-[1.5rem] shadow hover:shadow-xl transition-all`}
                   >
+
+                    {/* 🔴 OVERDUE BADGE */}
                     {isOverdue && (
-                      <div className="absolute top-0 right-5 -translate-y-1/2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
+                      <div className="absolute top-0 right-5 -translate-y-1/2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full animate-pulse">
                         Overdue
                       </div>
                     )}
 
+                    {/* ⚡ FASTEST BADGE */}
+                    {task.status === "APPROVED" &&
+                      task.actualMinutes > 0 &&
+                      task.estimatedMinutes > 0 &&
+                      task.actualMinutes < task.estimatedMinutes * 0.7 && (
+                        <div className="absolute top-0 left-5 -translate-y-1/2 bg-emerald-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">
+                          ⚡ Fast
+                        </div>
+                      )}
                     <Link
                       href={`/dashboard/tasks/${task._id}`}
-                      className="block text-sm font-black text-slate-800 leading-tight mb-3 hover:text-rose-600"
+                      className="block text-sm font-black text-slate-800 mb-3 hover:text-rose-600"
                     >
                       {task.title}
                     </Link>
 
                     {/* Meta */}
                     <div className="grid grid-cols-2 gap-y-3 mb-4">
+
                       <div>
                         <p className="text-[8px] font-black text-gray-400 uppercase">User</p>
-                        <p className="text-[10px] font-bold text-slate-600 truncate">
+                        <p className="text-[10px] font-bold text-slate-600">
                           {task.assignedTo?.name || "Unassigned"}
                         </p>
                       </div>
@@ -266,17 +263,29 @@ export default function TaskPanel({ workshopId }: any) {
                         </p>
                       </div>
 
+                      {/* ⏱ TIME BLOCK */}
                       <div>
                         <p className="text-[8px] font-black text-gray-400 uppercase">Time</p>
-                        <p className={`text-[10px] font-bold ${task.slaStatus === "OVERDUE"
-                            ? "text-rose-500 animate-pulse"
-                            : task.slaStatus === "AT_RISK"
-                              ? "text-amber-500"
-                              : "text-slate-700"
+
+                        <p className={`text-[10px] font-bold 
+  ${task.status === "APPROVED"
+                            ? task.isOnTime
+                              ? "text-emerald-600"
+                              : "text-rose-500"
+                            : task.slaStatus === "OVERDUE"
+                              ? "text-rose-500 animate-pulse"
+                              : task.slaStatus === "AT_RISK"
+                                ? "text-amber-500"
+                                : "text-slate-700"
                           }`}>
-                          {task.deadlineAt
-                            ? getTimeLeft(task.deadlineAt)
-                            : "--"}
+
+                          {task.status === "APPROVED"
+                            ? task.actualMinutes > 0
+                              ? `Completed in ${task.actualMinutes} min ⚡`
+                              : "Completed"
+                            : task.deadlineAt
+                              ? getTimeLeft(task.deadlineAt)
+                              : "--"}
                         </p>
                       </div>
 
@@ -288,7 +297,7 @@ export default function TaskPanel({ workshopId }: any) {
                       </div>
                     </div>
 
-                    {/* Status Select */}
+                    {/* Status */}
                     <select
                       disabled={task.status === "APPROVED"}
                       value={task.status}
@@ -303,6 +312,7 @@ export default function TaskPanel({ workshopId }: any) {
                         </option>
                       ))}
                     </select>
+
                   </div>
                 );
               })}

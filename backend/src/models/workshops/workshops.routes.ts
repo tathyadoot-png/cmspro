@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addMembers, assignTeamLead, createWorkshop, getWorkshopById, getWorkshops } from "./workshops.controller";
+import { addMembers, assignTeamLead, createWorkshop, deleteWorkshop, getWorkshopById, getWorkshops, updateWorkshop } from "./workshops.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
 import { getWorkshopStats } from "./workshops.controller";
@@ -47,4 +47,19 @@ router.post(
   requirePermission("WORKSHOP_UPDATE"),
   assignTeamLead
 );
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  requirePermission("WORKSHOP_DELETE"),
+  deleteWorkshop
+);
+
+router.patch(
+  "/:id",
+  authMiddleware,
+  requirePermission("WORKSHOP_UPDATE"),
+  updateWorkshop
+);
+
 export default router;

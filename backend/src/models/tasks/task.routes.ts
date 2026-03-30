@@ -29,7 +29,6 @@ router.post(
    TASK FLOW
 =========================== */
 
-// ▶ Start Task
 router.patch(
   "/:id/start",
   authMiddleware,
@@ -37,7 +36,6 @@ router.patch(
   startTask
 );
 
-// ▶ Submit Task
 router.patch(
   "/:id/submit",
   authMiddleware,
@@ -45,7 +43,6 @@ router.patch(
   submitTask
 );
 
-// ▶ Approve Task
 router.patch(
   "/:id/approve",
   authMiddleware,
@@ -53,7 +50,6 @@ router.patch(
   approveTask
 );
 
-// ▶ Request Revision
 router.patch(
   "/:id/revision",
   authMiddleware,
@@ -61,7 +57,6 @@ router.patch(
   requestRevision
 );
 
-// ▶ Generic Status Update (dropdown वाला)
 router.patch(
   "/:id/status",
   authMiddleware,
@@ -70,22 +65,20 @@ router.patch(
 );
 
 /* ===========================
-   TASK FETCH
+   FETCH
 =========================== */
 
-// ▶ Get all tasks
 router.get(
   "/",
   authMiddleware,
-  requirePermission("TASK_VIEW"), // 🔥 ADD THIS (important)
+  requirePermission("TASK_VIEW"),
   getTasks
 );
 
-// ▶ Get single task
 router.get(
   "/:id",
   authMiddleware,
-  requirePermission("TASK_VIEW"), // 🔥 ADD THIS
+  requirePermission("TASK_VIEW"),
   getTask
 );
 

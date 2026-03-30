@@ -67,6 +67,7 @@ class WorkshopService {
     }
 
 return Workshop.find(query)
+
   .populate("clientId", "name clientType")
   .populate("teamLeads", "name userCode")
   .populate("writers", "name userCode")
@@ -184,6 +185,50 @@ async assignTeamLead(
   return workshop
 
 }
+
+
+async updateWorkshop(
+  workshopId: string,
+  data: any,
+  currentUser: IUser
+) {
+  const workshop = await Workshop.findOne({
+    _id: workshopId,
+    organizationId: currentUser.organizationId
+  });
+
+  if (!workshop)
+    throw new Error("Workshop not found");
+
+  if (data.workshopName) workshop.workshopName = data.workshopName;
+  if (data.description) workshop.description = data.description;
+  if (data.deadline) workshop.deadline = data.deadline;
+  if (data.priority) workshop.priority = data.priority;
+
+  await workshop.save();
+
+  return workshop;
+}
+
+
+
+async deleteWorkshop(
+  workshopId: string,
+  currentUser: IUser
+) {
+  const workshop = await Workshop.findOne({
+    _id: workshopId,
+    organizationId: currentUser.organizationId
+  });
+
+  if (!workshop)
+    throw new Error("Workshop not found");
+
+  await Workshop.deleteOne({ _id: workshopId });
+}
+
+
+
 
 }
 
