@@ -28,7 +28,12 @@ export const requirePermission = (permissionName: string) => {
         message: "Forbidden - Missing Permission",
       });
     }
-
+// console.log(
+//   req.user.roles.map((r: any) => ({
+//     role: r.name,
+//     permissions: r.permissions.map((p: any) => p.name)
+//   }))
+// );
     next();
   };
 };

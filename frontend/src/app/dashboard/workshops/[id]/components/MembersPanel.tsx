@@ -211,12 +211,12 @@ export default function MembersPanel({ workshopId, workshop }: any) {
   const [users, setUsers] = useState<any[]>([]);
   const [selected, setSelected] = useState("");
 
-  useEffect(() => {
-    if (workshopId) {
-      fetchMembers();
-      fetchUsers();
-    }
-  }, [workshopId]);
+useEffect(() => {
+  if (workshopId) {
+    fetchMembers();
+    fetchUsers(); // safe
+  }
+}, [workshopId]);
 
   const fetchMembers = async () => {
     try {
@@ -227,15 +227,19 @@ export default function MembersPanel({ workshopId, workshop }: any) {
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      const res = await api.get("/users");
-      setUsers(res.data.data || []);
-    } catch (err) {
+const fetchUsers = async () => {
+  try {
+    const res = await api.get("/users");
+    setUsers(res.data.data || []);
+  } catch (err: any) {
+    // 🔥 FIX: 403 ignore
+    if (err?.response?.status === 403) {
+      setUsers([]);
+    } else {
       console.error(err);
     }
-  };
-
+  }
+};
   const addMember = async () => {
     if (!selected) return;
     await api.post(`/workshops/${workshopId}/members`, {

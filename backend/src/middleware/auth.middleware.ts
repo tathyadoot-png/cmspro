@@ -38,14 +38,14 @@ if (!user) {
 // ✅ बस ये रखो
 req.user = user as any;
     // 🔥 IMPORTANT: attach permissions
-    const permissions = user.roles.flatMap((role: any) =>
-      role.permissions.map((p: any) => p.name)
-    );
+    // const permissions = user.roles.flatMap((role: any) =>
+    //   role.permissions.map((p: any) => p.name)
+    // );
 
-    req.user = {
-      ...user.toObject(),
-      permissions,
-    } as any;
+    // req.user = {
+    //   ...user.toObject(),
+    //   permissions,
+    // } as any;
 
     next();
   } catch (error) {
