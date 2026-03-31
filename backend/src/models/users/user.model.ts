@@ -28,6 +28,7 @@ lockUntil?: Date;
   consistencyScore: number;
 permissions?: string[];
   lastLoginAt?: Date;
+  newAssignedTasks: number;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -60,7 +61,10 @@ lockUntil: { type: Date },
       lowercase: true,
       index: true,
     },
-
+newAssignedTasks: {
+  type: Number,
+  default: 0
+},
     password: {
       type: String,
       required: true,

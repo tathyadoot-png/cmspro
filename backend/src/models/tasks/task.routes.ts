@@ -7,7 +7,8 @@ import {
   requestRevision,
   getTasks,
   updateTaskStatus,
-  getTask
+  getTask,
+  getMyActiveTaskCount
 } from "./task.controller";
 
 import { authMiddleware } from "../../middleware/auth.middleware";
@@ -75,6 +76,12 @@ router.get(
   getTasks
 );
 
+router.get(
+  "/my-active-count",
+  authMiddleware,
+  requirePermission("TASK_VIEW"),
+  getMyActiveTaskCount
+);
 router.get(
   "/:id",
   authMiddleware,

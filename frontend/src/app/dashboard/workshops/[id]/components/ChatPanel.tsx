@@ -154,8 +154,22 @@ export default function ChatPanel({ workshopId }: any) {
               </div>
               <div className="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
                 <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                  {m.message}
-                </p>
+
+  {m.type === "TASK_EVENT" ? (
+    <>
+      ⚡ {m.message}
+      {m.metadata?.assignedTo?.name && (
+        <> to <span className="font-bold text-rose-600">{m.metadata.assignedTo.name}</span></>
+      )}
+      {m.metadata?.assignedBy?.name && (
+        <> by <span className="font-bold">{m.metadata.assignedBy.name}</span></>
+      )}
+    </>
+  ) : (
+    m.message
+  )}
+
+</p>
               </div>
             </div>
           ))

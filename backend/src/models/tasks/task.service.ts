@@ -14,6 +14,10 @@ import { predictDeadlineRisk } from "../../utils/aiDeadlinePredictor";
 import Workshop from "../workshops/workshops.model";
 import TimeLog from "../timeLogs/timeLog.model";
 import { TaskStatus } from "./task.model";
+import messageService from "../messages/messages.service";
+
+
+
 class TaskService {
 
   async createTask(data: any, currentUser: IUser) {
@@ -57,6 +61,13 @@ class TaskService {
       referenceLink: data.referenceLink || ""
     });
 
+await messageService.createTaskEventMessage({
+  task,
+  assignedTo: task.assignedTo,
+  assignedBy: currentUser._id
+});
+
+
     // 🔥 SLA calculate after creation
     task.slaStatus = "SAFE";
 
@@ -69,7 +80,8 @@ class TaskService {
     await User.findByIdAndUpdate(task.assignedTo, {
       $inc: {
         currentActiveTasks: 1,
-        totalTasks: 1   // 🔥 ADD THIS
+        totalTasks: 1   ,
+        newAssignedTasks: 1 
       }
     });
 
@@ -86,6 +98,9 @@ class TaskService {
 
     return task;
   }
+
+
+  
 
   async startTask(taskId: string, currentUser: IUser) {
 
@@ -156,9 +171,8 @@ class TaskService {
       throw new Error("Invalid state transition");
 
     if (!task.startedAt) {
-      task.startedAt = task.assignedAt || new Date();
-    }
-
+  throw new Error("Task not started properly");
+}
     const now = new Date();
 
     const { actualMinutes, delayMinutes } =
@@ -175,19 +189,23 @@ class TaskService {
     }
 
     task.submissions.push({
-      type: submissionData?.startsWith("http") ? "LINK" : "TEXT",
+      type: submissionData?.startsWith("http")
+  ? "LINK"
+  : submissionData?.includes("base64")
+  ? "IMAGE"
+  : "TEXT",
       data: submissionData,
       submittedAt: new Date()
     });
 
 
-    if (task.delayMinutes > 0) {
-      task.slaStatus = "OVERDUE";
-    } else if (task.delayMinutes > -5) {
-      task.slaStatus = "AT_RISK";
-    } else {
-      task.slaStatus = "SAFE";
-    }
+  if (delayMinutes > 0) {
+  task.slaStatus = "OVERDUE";
+} else if (actualMinutes > task.estimatedMinutes * 0.8) {
+  task.slaStatus = "AT_RISK";
+} else {
+  task.slaStatus = "SAFE";
+}
     await task.save();
 
     // ✅ TimeLog end
@@ -528,6 +546,23 @@ async approveTask(taskId: string, currentUser: IUser) {
     return task;
   }
 
+
+async getMyActiveTaskCount(user: IUser) {
+
+  return Task.countDocuments({
+    assignedTo: user._id,
+    organizationId: user.organizationId,
+    status: {
+      $in: [
+        "ASSIGNED",
+        "IN_PROGRESS",
+        "IN_REVIEW",
+        "CHANGES_REQUESTED"
+      ]
+    }
+  });
+
+}
 
 }
 

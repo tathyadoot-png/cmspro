@@ -95,6 +95,7 @@ import ActivityPanel from "./components/ActivityPanel";
 import TLPanel from "./components/TLPanel";
 import CreateTaskPanel from "./components/CreateTaskPanel";
 import TaskPanel from "./components/TaskPanel";
+import ChatPanel from "./components/ChatPanel";
 
 export default function WorkshopPage() {
   const params = useParams();
@@ -102,7 +103,7 @@ export default function WorkshopPage() {
 
   const [workshop, setWorkshop] = useState<any>(null);
   const [tab, setTab] = useState("members");
-
+const [activeCount, setActiveCount] = useState(0);
   useEffect(() => {
     if (workshopId) fetchWorkshop();
   }, [workshopId]);
@@ -115,6 +116,25 @@ export default function WorkshopPage() {
       console.error("Failed to load workshop", err);
     }
   };
+
+const fetchTaskCount = async () => {
+  try {
+    const res = await api.get("/tasks/my-active-count");
+    setActiveCount(res.data.count);
+  } catch (err) {
+    console.error("Count error", err);
+  }
+};
+
+useEffect(() => {
+  if (!workshopId) return;
+
+  fetchWorkshop();
+  fetchTaskCount();
+
+}, [workshopId]);
+
+
 
   if (!workshop) return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
@@ -129,13 +149,16 @@ export default function WorkshopPage() {
     { id: "activity", label: "Operations Log", icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" },
     { id: "performance", label: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
     { id: "createTask", label: "Deploy Task", icon: "M12 6v6m0 0v6m0-6h6m-6 0H6" },
-  ];
+{ id: "chat", label: "Chat", icon: "M8 10h.01M12 10h.01M16 10h.01M21 16a2 2 0 01-2 2H7l-4 4V6a2 2 0 012-2h14a2 2 0 012 2v10z" },  ];
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pb-20">
       {/* Top Section */}
       <div className="bg-white border-b border-gray-100 px-8 pt-10 pb-2">
-        <WorkshopHeader workshop={workshop} />
+        <WorkshopHeader 
+  workshop={workshop} 
+  activeCount={activeCount} // 🔥 ADD THIS
+/>
         
         <div className="mt-8 overflow-x-auto no-scrollbar">
           <WorkshopStats workshopId={workshopId} />
@@ -166,7 +189,7 @@ export default function WorkshopPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div> 
 
       {/* Main Content Area */}
       <div className="max-w-[1600px] mx-auto p-8">
@@ -201,6 +224,11 @@ export default function WorkshopPage() {
               <CreateTaskPanel workshop={workshop} />
             </div>
           )}
+          {tab === "chat" && (
+  <div className="max-w-3xl mx-auto">
+    <ChatPanel workshopId={workshopId} />
+  </div>
+)}
         </div>
       </div>
 

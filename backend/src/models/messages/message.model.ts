@@ -8,7 +8,15 @@ export interface IMessage extends Document {
 
   sender: Types.ObjectId;
 
-  message: string;
+  message?: string;
+
+  type: "TEXT" | "TASK_EVENT";
+
+  metadata?: {
+    taskId?: Types.ObjectId;
+    assignedTo?: Types.ObjectId;
+    assignedBy?: Types.ObjectId;
+  };
 
 }
 
@@ -36,7 +44,24 @@ const MessageSchema = new Schema<IMessage>(
 
     message: {
       type: String,
-      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: ["TEXT", "TASK_EVENT"],
+      default: "TEXT",
+    },
+
+    metadata: {
+      taskId: { type: Schema.Types.ObjectId },
+    assignedTo: {
+  type: Schema.Types.ObjectId,
+  ref: "User"
+},
+assignedBy: {
+  type: Schema.Types.ObjectId,
+  ref: "User"
+}
     },
 
   },

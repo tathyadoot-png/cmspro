@@ -277,3 +277,26 @@ export const getTask = async (req: Request, res: Response) => {
   }
 
 };
+
+export const getMyActiveTaskCount = async (req: Request, res: Response) => {
+  try {
+
+    if (!req.user) {
+      return res.status(401).json({ success: false });
+    }
+
+    const count = await taskService.getMyActiveTaskCount(req.user);
+
+    res.json({
+      success: true,
+      count
+    });
+
+  } catch (error: any) {
+    console.error("COUNT ERROR:", error); // 👈 ADD THIS
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};

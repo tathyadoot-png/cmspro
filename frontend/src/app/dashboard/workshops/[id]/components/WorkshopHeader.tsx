@@ -32,8 +32,9 @@
 
 
 "use client";
+export default function WorkshopHeader({ workshop, activeCount }: any) {
 
-export default function WorkshopHeader({ workshop }: any) {
+  
   // Dynamic status color logic
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -77,8 +78,12 @@ export default function WorkshopHeader({ workshop }: any) {
               Managed Workshop Instance
             </p>
           </div>
-        </div>
 
+          
+        </div>
+<div className="ml-4 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">
+  ⚡ {activeCount} Active Tasks
+</div>
         {/* Right Side: Quick Stats & Status */}
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
