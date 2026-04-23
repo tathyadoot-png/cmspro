@@ -23,6 +23,7 @@ import teamAnalyticsRoutes from "./models/analytics/teamAnalytics.routes";
 
 import permissionRoutes from "./models/roles/permission.routes";
 import performanceRoutess from "./models/performance/performance.routes";
+import notificationRoutes from "./models/notification/notification.routes";
 
 const router = Router();
 
@@ -50,4 +51,8 @@ router.use("/workshops", workshopRoutes);
 router.use("/audit", auditRoutes);
 router.use("/messages", messageRoutes);
 router.use("/upload",uploadRoutes);
+router.use("/notifications", notificationRoutes);
+
+
+
 export default router;

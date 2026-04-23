@@ -15,7 +15,7 @@ import Workshop from "../workshops/workshops.model";
 import TimeLog from "../timeLogs/timeLog.model";
 import { TaskStatus } from "./task.model";
 import messageService from "../messages/messages.service";
-
+import eventBus from "../../utils/eventBus";
 
 
 class TaskService {
@@ -61,6 +61,8 @@ class TaskService {
       referenceLink: data.referenceLink || ""
     });
 
+    // 🔔 EVENT: TASK ASSIGNED
+
 await messageService.createTaskEventMessage({
   task,
   assignedTo: task.assignedTo,
@@ -76,6 +78,17 @@ await messageService.createTaskEventMessage({
     );
 
     await task.save();
+
+
+    eventBus.emit("TASK_ASSIGNED", {
+  assignedTo: task.assignedTo,
+  assignedBy: task.assignedBy,
+  title: task.title,
+  taskId: task._id,
+    organizationId: task.organizationId,
+  clientId: task.clientId,
+  workshopId: task.workshopId,
+});
     // ✅ Workload tracking
     await User.findByIdAndUpdate(task.assignedTo, {
       $inc: {
@@ -127,6 +140,7 @@ await messageService.createTaskEventMessage({
     task.status = "IN_PROGRESS";
     task.startedAt = new Date();
 
+
     task.slaStatus = calculateSLAStatus(
       task.startedAt,
       task.estimatedMinutes,
@@ -134,6 +148,15 @@ await messageService.createTaskEventMessage({
     );
 
     await task.save();
+
+ eventBus.emit("TASK_STARTED", {
+  assignedTo: task.assignedTo,
+  title: task.title,
+  taskId: task._id,
+    organizationId: task.organizationId,
+  clientId: task.clientId,
+  workshopId: task.workshopId,
+});
 
     // ✅ TimeLog start
     await TimeLog.create({
@@ -184,6 +207,9 @@ await messageService.createTaskEventMessage({
     task.delayMinutes = delayMinutes;
     task.isOnTime = delayMinutes <= 0;
 
+
+
+
     if (!task.submissions) {
       task.submissions = [];
     }
@@ -207,6 +233,14 @@ await messageService.createTaskEventMessage({
   task.slaStatus = "SAFE";
 }
     await task.save();
+eventBus.emit("TASK_SUBMITTED", {
+  assignedBy: task.assignedBy,
+  title: task.title,
+  taskId: task._id,
+    organizationId: task.organizationId,
+  clientId: task.clientId,
+  workshopId: task.workshopId,
+});
 
     // ✅ TimeLog end
     const timeLog = await TimeLog.findOne({
@@ -299,8 +333,9 @@ async approveTask(taskId: string, currentUser: IUser) {
   task.status = "APPROVED";
   task.completedAt = new Date();
 
-  // ❌ REMOVED: duplicate time calculation
-  // (actualMinutes & delayMinutes already calculated in submitTask)
+
+
+
 
   // ✅ FINAL SLA CHECK (safe)
   if (task.deadlineAt && task.completedAt) {
@@ -315,6 +350,14 @@ async approveTask(taskId: string, currentUser: IUser) {
   }
 
   await task.save();
+eventBus.emit("TASK_APPROVED", {
+  assignedTo: task.assignedTo,
+  title: task.title,
+  taskId: task._id,
+    organizationId: task.organizationId,
+  clientId: task.clientId,
+  workshopId: task.workshopId,
+});
 
   // ✅ Workload reduce
   await User.findByIdAndUpdate(task.assignedTo, {
@@ -372,7 +415,16 @@ async approveTask(taskId: string, currentUser: IUser) {
     task.status = "CHANGES_REQUESTED";
     task.revisionCount += 1;
 
+
+
     await task.save();
+
+eventBus.emit("REVISION_REQUESTED", {
+  assignedTo: task.assignedTo,
+  title: task.title,
+  taskId: task._id,
+});
+
 
     // optional user revision tracking
     // await User.findByIdAndUpdate(task.assignedTo, {

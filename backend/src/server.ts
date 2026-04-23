@@ -97,6 +97,7 @@ import routes from "./routes";
 import { seedRolesAndPermissions } from "./seed/seedRolesAndPermissions";
 import { seedSuperAdmin } from "./seed/seedSuperAdmin";
 import { seedDemoData } from "./seed/seedDemoData";
+import "../src/models/notification/notification.listener";
 
 const app = express();
 

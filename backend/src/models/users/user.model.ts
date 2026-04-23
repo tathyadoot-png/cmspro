@@ -29,6 +29,7 @@ lockUntil?: Date;
 permissions?: string[];
   lastLoginAt?: Date;
   newAssignedTasks: number;
+  fcmTokens: string[];
 }
 
 const UserSchema = new Schema<IUser>(
@@ -39,6 +40,10 @@ const UserSchema = new Schema<IUser>(
       required: true,
       index: true,
     },
+    fcmTokens: {
+  type: [String],
+  default: [],
+},
 failedAttempts: { type: Number, default: 0 },
 lockUntil: { type: Date },
     userCode: {
@@ -53,6 +58,7 @@ lockUntil: { type: Date },
       required: true,
       trim: true,
     },
+
 
     email: {
       type: String,

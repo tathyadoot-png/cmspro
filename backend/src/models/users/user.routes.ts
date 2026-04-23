@@ -9,7 +9,7 @@ import {
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { requirePermission } from "../../middleware/permission.middleware";
 import { fetchUserStats } from "./userStats.controller";
-
+import User from "./user.model";
 const router = Router();
 
 /* ===========================
@@ -59,5 +59,25 @@ router.get(
   requirePermission("USER_VIEW"),
   fetchUserStats
 );
+
+router.post("/save-token", authMiddleware, async (req: any, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: "Token missing" });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $addToSet: { fcmTokens: token },
+    });
+
+    res.json({ success: true, message: "Token saved" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
+  }
+});
+
 
 export default router;

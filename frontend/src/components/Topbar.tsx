@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import logo from "../../public/image/SociyoLogo.png";
 import Image from "next/image";
 import { LogOut, Bell, ChevronDown } from "lucide-react";
-
+import { useEffect, useState } from "react";
+import { useNotification } from "@/context/NotificationContext";
 export default function Topbar() {
   const { user, setUser } = useAuth();
+const { hasUnread, setHasUnread } = useNotification();
   const router = useRouter();
 
   const logout = async () => {
@@ -20,6 +22,22 @@ export default function Topbar() {
       console.error("Logout failed", error);
     }
   };
+
+  useEffect(() => {
+  const fetchNotifications = async () => {
+    try {
+      const res = await api.get("/notifications");
+
+      const unread = res.data.data.some((n: any) => !n.isRead);
+
+      setHasUnread(unread);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchNotifications();
+}, []);
 
   return (
     <nav className="h-16 md:h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 flex justify-between items-center sticky top-0 z-[40] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] transition-all">
@@ -54,10 +72,17 @@ export default function Topbar() {
       <div className="flex items-center gap-1 md:gap-3">
         
         {/* Notifications Icon */}
-        <button className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all relative">
-          <Bell size={18} className="md:w-[20px] md:h-[20px]" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-        </button>
+     <button
+  onClick={() => router.push("/dashboard/notifications")}
+  className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all relative"
+>
+  <Bell size={18} className="md:w-[20px] md:h-[20px]" />
+
+  {/* 🔴 show only if unread */}
+  {hasUnread && (
+    <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+  )}
+</button>
 
         {/* User Profile Card */}
         <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-gray-100 group cursor-pointer">
