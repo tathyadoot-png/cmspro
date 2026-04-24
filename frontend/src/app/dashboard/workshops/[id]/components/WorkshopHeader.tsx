@@ -1,41 +1,7 @@
-// export default function WorkshopHeader({ workshop }: any) {
-
-//   return (
-
-//     <div className="flex justify-between items-center">
-
-//       <div>
-
-//         <h1 className="text-2xl font-bold">
-//           {workshop.workshopName}
-//         </h1>
-
-//         <p className="text-sm text-gray-500">
-//           {workshop.workshopCode}
-//         </p>
-
-//       </div>
-
-//       <div>
-
-//         <span className="text-sm">
-//           Status: {workshop.status}
-//         </span>
-
-//       </div>
-
-//     </div>
-
-//   );
-
-// }
-
-
 "use client";
+
 export default function WorkshopHeader({ workshop, activeCount }: any) {
 
-  
-  // Dynamic status color logic
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
       case "ACTIVE": return "text-emerald-500 bg-emerald-500/10 border-emerald-500/20";
@@ -48,70 +14,59 @@ export default function WorkshopHeader({ workshop, activeCount }: any) {
   if (!workshop) return null;
 
   return (
-    <div className="relative mb-10 overflow-hidden">
-      {/* Decorative Background Glow */}
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none" />
+    <div className="relative mb-4 md:mb-10 overflow-hidden">
+      {/* Glow Effect - Smaller on mobile */}
+      <div className="absolute -top-12 -left-12 w-48 h-48 bg-rose-500/5 rounded-full blur-[60px] pointer-events-none" />
       
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+      <div className="relative z-10 flex flex-col gap-3">
         
-        {/* Left Side: Identity */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-1.5 h-8 bg-rose-600 rounded-full" />
-            <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.4em]">
-              Workshop Environment
-            </p>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-none">
-            {workshop.workshopName}
-          </h1>
-          
-          <div className="flex items-center gap-3 pt-2">
-            <div className="bg-[#1A1A1A] px-3 py-1 rounded-lg shadow-lg">
-              <p className="text-[11px] font-black text-white tracking-[0.15em] uppercase">
-                {workshop.workshopCode}
+        {/* Top Row: Title + Status (Mobile Friendly) */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 md:h-6 bg-rose-600 rounded-full" />
+              <p className="text-[8px] md:text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] md:tracking-[0.4em]">
+                Workshop
               </p>
             </div>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-              Managed Workshop Instance
-            </p>
+            <h1 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+              {workshop.workshopName}
+            </h1>
           </div>
 
-          
-        </div>
-<div className="ml-4 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">
-  ⚡ {activeCount} Active Tasks
-</div>
-        {/* Right Side: Quick Stats & Status */}
-        <div className="flex items-center gap-4">
-          <div className="text-right hidden sm:block">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Current State</p>
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl border font-black text-[11px] uppercase tracking-[0.1em] transition-all shadow-sm ${getStatusColor(workshop.status)}`}>
-              <span className="relative flex h-2 w-2">
+          {/* Status Badge - Fixed size for mobile */}
+          <div className="flex flex-col items-end shrink-0">
+             <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-xl border font-black text-[9px] md:text-[11px] uppercase tracking-wider transition-all shadow-sm ${getStatusColor(workshop.status)}`}>
+              <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-current"></span>
               </span>
               {workshop.status || "UNKNOWN"}
             </div>
           </div>
+        </div>
 
-          {/* Action Trigger Decor */}
-          {/* <div className="w-14 h-14 rounded-3xl bg-white border border-slate-100 shadow-xl flex items-center justify-center group cursor-pointer hover:border-rose-500 transition-all duration-500">
-            <svg 
-              className="text-slate-400 group-hover:text-rose-600 group-hover:rotate-12 transition-all" 
-              width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
-            >
-              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div> */}
+        {/* Bottom Row: Badges */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <div className="bg-[#1A1A1A] px-2.5 py-1 rounded-md shadow-md">
+            <p className="text-[9px] md:text-[11px] font-black text-white tracking-widest uppercase">
+              {workshop.workshopCode}
+            </p>
+          </div>
+          
+          <div className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-[9px] md:text-xs font-black uppercase tracking-wide flex items-center gap-1.5 border border-amber-100/50">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+            {activeCount} Tasks
+          </div>
+
+          <p className="hidden sm:block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+            Instance Managed
+          </p>
         </div>
       </div>
 
-      {/* Modern Underline Separator */}
-      <div className="mt-8 h-[1px] w-full bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
+      {/* Sleek Line */}
+      <div className="mt-5 h-[1px] w-full bg-gradient-to-r from-slate-200 via-slate-100 to-transparent" />
     </div>
   );
 }
