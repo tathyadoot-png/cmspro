@@ -178,128 +178,164 @@ await messageService.createTaskEventMessage({
 
     return task;
   }
-  async submitTask(taskId: string, submissionData: string, currentUser: IUser) {
+async submitTask(taskId: string, submissionData: string, currentUser: IUser) {
 
-    const task = await Task.findOne({
-      _id: taskId,
-      organizationId: currentUser.organizationId,
-    });
+  const task = await Task.findOne({
+    _id: taskId,
+    organizationId: currentUser.organizationId,
+  });
 
-    if (!task) throw new Error("Task not found");
+  if (!task) throw new Error("Task not found");
 
-    if (!task.assignedTo.equals(currentUser._id))
-      throw new Error("Unauthorized");
+  if (!task.assignedTo.equals(currentUser._id))
+    throw new Error("Unauthorized");
 
-    if (!canTransition(task.status, "IN_REVIEW"))
-      throw new Error("Invalid state transition");
+  if (!canTransition(task.status, "IN_REVIEW"))
+    throw new Error("Invalid state transition");
 
-    if (!task.startedAt) {
-  throw new Error("Task not started properly");
-}
-    const now = new Date();
-
-    const { actualMinutes, delayMinutes } =
-      calculateTaskTime(task.startedAt, now, task.estimatedMinutes);
-
-    task.status = "IN_REVIEW";
-    task.submittedAt = now;
-    task.actualMinutes = actualMinutes;
-    task.delayMinutes = delayMinutes;
-    task.isOnTime = delayMinutes <= 0;
-
-
-
-
-    if (!task.submissions) {
-      task.submissions = [];
-    }
-
-    task.submissions.push({
-      type: submissionData?.startsWith("http")
-  ? "LINK"
-  : submissionData?.includes("base64")
-  ? "IMAGE"
-  : "TEXT",
-      data: submissionData,
-      submittedAt: new Date()
-    });
-
-
-  if (delayMinutes > 0) {
-  task.slaStatus = "OVERDUE";
-} else if (actualMinutes > task.estimatedMinutes * 0.8) {
-  task.slaStatus = "AT_RISK";
-} else {
-  task.slaStatus = "SAFE";
-}
-    await task.save();
-eventBus.emit("TASK_SUBMITTED", {
-  assignedBy: task.assignedBy,
-  title: task.title,
-  taskId: task._id,
-    organizationId: task.organizationId,
-  clientId: task.clientId,
-  workshopId: task.workshopId,
-});
-
-    // ✅ TimeLog end
-    const timeLog = await TimeLog.findOne({
-      taskId: task._id,
-      userId: currentUser._id,
-      endTime: null
-    });
-
-    if (timeLog) {
-      timeLog.endTime = new Date();
-      timeLog.duration =
-        (timeLog.endTime.getTime() - timeLog.startTime.getTime()) / 60000;
-      await timeLog.save();
-    }
-
-    // Escalation
-    if (task.slaStatus === "AT_RISK") {
-      const alreadyEscalated =
-        await escalationService.hasOpenEscalation(task._id);
-
-      if (!alreadyEscalated) {
-        await escalationService.createEscalation(
-          task,
-          "Task is at risk",
-          "SLA_RISK"
-        );
-      }
-    }
-
-    await logActivity({
-      organizationId: task.organizationId,
-      userId: currentUser._id,
-      actionType: "TASK_SUBMITTED",
-      targetType: "TASK",
-      targetId: task._id,
-      clientId: task.clientId,
-      workshopId: task.workshopId,
-
-      metadata: {
-        duration: actualMinutes,
-        delay: delayMinutes,
-        status: task.slaStatus,
-        isOnTime: task.isOnTime,
-        revisionCount: task.revisionCount
-      },
-
-      snapshot: {
-        status: task.status,
-        assignedTo: task.assignedTo,
-        actualMinutes: task.actualMinutes,
-        delayMinutes: task.delayMinutes,
-        revisionCount: task.revisionCount
-      }
-    });
-
-    return task;
+  if (!task.startedAt) {
+    throw new Error("Task not started properly");
   }
 
+  const now = new Date();
 
+  const { actualMinutes, delayMinutes } =
+    calculateTaskTime(task.startedAt, now, task.estimatedMinutes);
+
+  task.status = "IN_REVIEW";
+  task.submittedAt = now;
+  task.actualMinutes = actualMinutes;
+  task.delayMinutes = delayMinutes;
+  task.isOnTime = delayMinutes <= 0;
+
+  // ✅ submissions
+  if (!task.submissions) {
+    task.submissions = [];
+  }
+
+  task.submissions.push({
+    type: submissionData?.startsWith("http")
+      ? "LINK"
+      : submissionData?.includes("base64")
+      ? "IMAGE"
+      : "TEXT",
+    data: submissionData,
+    submittedAt: new Date(),
+  });
+
+  // ✅ SLA
+  if (delayMinutes > 0) {
+    task.slaStatus = "OVERDUE";
+  } else if (actualMinutes > task.estimatedMinutes * 0.8) {
+    task.slaStatus = "AT_RISK";
+  } else {
+    task.slaStatus = "SAFE";
+  }
+
+  await task.save();
+
+  // =========================
+  // 🔔 EXISTING EVENT
+  // =========================
+  eventBus.emit("TASK_SUBMITTED", {
+    assignedBy: task.assignedBy,
+    title: task.title,
+    taskId: task._id,
+    organizationId: task.organizationId,
+    clientId: task.clientId,
+    workshopId: task.workshopId,
+  });
+
+  // =========================
+  // 🔥 NEW: APPROVERS NOTIFICATION
+  // =========================
+
+  const users = await User.find({
+    organizationId: task.organizationId,
+  }).populate({
+    path: "roles",
+    populate: {
+      path: "permissions",
+    },
+  });
+
+  const approvers = users.filter((u: any) =>
+    u.roles.some((role: any) =>
+      role.permissions.some((p: any) => p.name === "TASK_APPROVE")
+    )
+  );
+
+  // 🔔 send to all approvers
+  eventBus.emit("TASK_READY_FOR_APPROVAL", {
+    users: approvers,
+    title: task.title,
+    taskId: task._id,
+    triggeredBy: currentUser._id, // 🔥 important for skip self
+  });
+
+  // =========================
+  // ⏱ TimeLog end
+  // =========================
+  const timeLog = await TimeLog.findOne({
+    taskId: task._id,
+    userId: currentUser._id,
+    endTime: null,
+  });
+
+  if (timeLog) {
+    timeLog.endTime = new Date();
+    timeLog.duration =
+      (timeLog.endTime.getTime() - timeLog.startTime.getTime()) / 60000;
+    await timeLog.save();
+  }
+
+  // =========================
+  // ⚠️ Escalation
+  // =========================
+  if (task.slaStatus === "AT_RISK") {
+    const alreadyEscalated =
+      await escalationService.hasOpenEscalation(task._id);
+
+    if (!alreadyEscalated) {
+      await escalationService.createEscalation(
+        task,
+        "Task is at risk",
+        "SLA_RISK"
+      );
+    }
+  }
+
+  // =========================
+  // 🧾 Activity Log
+  // =========================
+  await logActivity({
+    organizationId: task.organizationId,
+    userId: currentUser._id,
+    actionType: "TASK_SUBMITTED",
+    targetType: "TASK",
+    targetId: task._id,
+    clientId: task.clientId,
+    workshopId: task.workshopId,
+
+    metadata: {
+      duration: actualMinutes,
+      delay: delayMinutes,
+      status: task.slaStatus,
+      isOnTime: task.isOnTime,
+      revisionCount: task.revisionCount,
+    },
+
+    snapshot: {
+      status: task.status,
+      assignedTo: task.assignedTo,
+      actualMinutes: task.actualMinutes,
+      delayMinutes: task.delayMinutes,
+      revisionCount: task.revisionCount,
+    },
+  });
+
+  return task;
+}
 
 
 
