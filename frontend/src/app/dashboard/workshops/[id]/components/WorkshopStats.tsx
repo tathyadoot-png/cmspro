@@ -45,7 +45,7 @@ export default function WorkshopStats({ workshopId }: any) {
 
 function Stat({ title, value, subtitle, variant, isAlert }: any) {
   return (
-    <div className="group relative bg-white border border-slate-100 p-2 md:p-8 rounded-xl md:rounded-[2.5rem] shadow-sm overflow-hidden h-full">
+    <div className="group relative bg-white border border-slate-100 p-2 md:p-6 rounded-xl md:rounded-[2.5rem] shadow-sm overflow-hidden h-full">
       
       {/* Background Accent */}
       <div className={`absolute top-0 right-0 w-6 h-6 md:w-24 md:h-24 -mr-1 -mt-1 rounded-full blur-lg opacity-10 ${

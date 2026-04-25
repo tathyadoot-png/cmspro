@@ -67,7 +67,7 @@ export default function WorkshopPage() {
     <div className="min-h-screen bg-[#F8F9FA] selection:bg-rose-100 overflow-x-hidden">
       
       {/* 1. Elite Header Section */}
-      <header className="bg-white border-b border-gray-100 pt-6 md:pt-12 pb-0 sticky top-0 z-30 shadow-sm md:static">
+      <header className="bg-white border-b border-gray-100   pb-0 sticky top-0 z-30 shadow-sm md:static">
         <div className="max-w-[1400px] mx-auto px-4 md:px-8">
           <WorkshopHeader workshop={workshop} activeCount={activeCount} />
           
@@ -136,7 +136,7 @@ export default function WorkshopPage() {
       {/* 5. Mobile FAB (Deploy Task) - Creativity Here */}
       <button 
         onClick={() => setTab("createTask")}
-        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden flex items-center gap-3 px-4 py-2 rounded-full shadow-[0_20px_40px_rgba(225,29,72,0.3)] transition-all active:scale-95 ${tab === "createTask" ? 'bg-slate-900 text-white' : 'bg-rose-600 text-white'}`}
+        className={`fixed md:bottom-3 md:px-20 bottom-6 left-1/2 -translate-x-1/2 z-50  flex items-center gap-3 px-4 py-2 rounded-full shadow-[0_20px_40px_rgba(225,29,72,0.3)] transition-all active:scale-95 ${tab === "createTask" ? 'bg-slate-900 text-white' : 'bg-rose-600 text-white'}`}
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
           <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

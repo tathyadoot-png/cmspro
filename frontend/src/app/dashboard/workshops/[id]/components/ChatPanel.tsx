@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -10,10 +9,9 @@ export default function ChatPanel({ workshopId }: any) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetchMessages();
+    if (workshopId) fetchMessages();
   }, [workshopId]);
 
-  // Scroll to bottom whenever messages update
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -25,104 +23,90 @@ export default function ChatPanel({ workshopId }: any) {
       const res = await api.get(`/messages/workshop/${workshopId}`);
       setMessages(res.data.data || []);
     } catch (err) {
-      console.error("Chat fetch error:", err);
+      console.error(err);
     }
   };
 
   const send = async () => {
     if (!text.trim()) return;
     try {
-      await api.post("/messages", {
-        workshopId,
-        message: text,
-      });
+      await api.post("/messages", { workshopId, message: text });
       setText("");
       fetchMessages();
     } catch (err) {
-      console.error("Send error:", err);
+      console.error(err);
     }
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-gray-200 shadow-xl flex flex-col h-[600px] overflow-hidden">
+    <div className="bg-white rounded-3xl border border-slate-200 flex flex-col h-[600px] my-5 overflow-hidden shadow-sm transition-all">
       
-      {/* Dark Header */}
-      <div className="bg-[#1A1A1A] px-8 py-5 border-b border-white/5 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-black text-white tracking-tight">Team Comms</h2>
-          <p className="text-[9px] text-gray-500 font-black uppercase tracking-[0.2em] mt-0.5 italic">Encrypted Channel</p>
+      {/* 1. COMPACT HEADER */}
+      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+          <h2 className="text-[11px] font-black uppercase tracking-widest text-slate-700">Team Comms</h2>
         </div>
-        <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-          <svg className="text-rose-500" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" strokeLinecap="round"/>
-          </svg>
-        </div>
+        <span className="text-[9px] font-bold text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100">
+          ID: {workshopId?.slice(-4).toUpperCase()}
+        </span>
       </div>
 
-      {/* Message Area */}
+      {/* 2. CHAT AREA */}
       <div 
         ref={scrollRef}
-        className="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50/30 custom-scrollbar"
+        className="flex-1 p-4 overflow-y-auto space-y-4 bg-white custom-scrollbar"
       >
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center opacity-30">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Initiate conversation...</p>
-          </div>
+          <p className="text-[10px] text-center mt-10 text-slate-300 font-bold uppercase tracking-widest">No messages</p>
         ) : (
-          messages.map((m: any) => (
-            <div key={m._id} className="flex flex-col">
-              <div className="flex items-center gap-2 mb-1 ml-1">
-                <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">
-                  {m.sender?.name}
-                </span>
-                <span className="text-[8px] font-bold text-gray-400 uppercase">
-                  {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+          messages.map((m: any) => {
+            const isSystem = m.type === "TASK_EVENT";
+            return (
+              <div key={m._id} className={`flex flex-col ${isSystem ? 'items-center py-1' : ''}`}>
+                {!isSystem && (
+                  <div className="flex items-end gap-1.5 mb-1 px-1">
+                    <span className="text-[10px] font-bold text-slate-900">{m.sender?.name}</span>
+                    <span className="text-[8px] text-slate-400 font-medium">
+                      {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )}
+                
+                <div className={`
+                  ${isSystem 
+                    ? 'text-[9px] font-bold text-indigo-500 bg-indigo-50/50 px-4 py-1 rounded-full border border-indigo-100/50 italic tracking-tight' 
+                    : 'bg-slate-50 text-slate-700 p-3 rounded-2xl rounded-tl-none border border-slate-100 max-w-[90%]'
+                  }
+                `}>
+                  <p className="text-[11px] leading-snug font-medium">
+                    {isSystem && <span className="mr-1.5 font-bold">◈</span>}
+                    {m.message}
+                  </p>
+                </div>
               </div>
-              <div className="bg-white border border-gray-100 p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[85%]">
-                <p className="text-xs text-slate-600 font-medium leading-relaxed">
-
-  {m.type === "TASK_EVENT" ? (
-    <>
-      ⚡ {m.message}
-      {m.metadata?.assignedTo?.name && (
-        <> to <span className="font-bold text-rose-600">{m.metadata.assignedTo.name}</span></>
-      )}
-      {m.metadata?.assignedBy?.name && (
-        <> by <span className="font-bold">{m.metadata.assignedBy.name}</span></>
-      )}
-    </>
-  ) : (
-    m.message
-  )}
-
-</p>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="p-5 bg-white border-t border-gray-100">
-        <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 p-1.5 rounded-2xl focus-within:border-rose-500/50 focus-within:ring-4 focus-within:ring-rose-500/5 transition-all">
+      {/* 3. MINIMAL INPUT */}
+      <div className="p-3 border-t border-slate-100 bg-white">
+        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1 rounded-2xl focus-within:border-indigo-400 transition-all">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
-            placeholder="Type a message..."
-            className="flex-1 bg-transparent px-4 py-2 text-xs font-bold text-slate-700 outline-none placeholder:text-gray-400"
+            placeholder="Type your message..."
+            className="flex-1 bg-transparent px-3 py-1.5 text-[11px] font-medium text-slate-700 outline-none"
           />
           <button
             onClick={send}
             disabled={!text.trim()}
-            className="bg-[#1A1A1A] text-white p-2.5 rounded-xl hover:bg-rose-600 disabled:opacity-20 disabled:hover:bg-[#1A1A1A] transition-all group"
+            className="bg-indigo-600 text-white h-8 w-8 rounded-xl flex items-center justify-center hover:bg-indigo-700 transition-all disabled:opacity-30 active:scale-95"
           >
-            <svg 
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
-              className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"
-            >
-              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
             </svg>
           </button>
         </div>
