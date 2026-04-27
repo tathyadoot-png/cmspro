@@ -58,7 +58,8 @@ class TaskService {
       estimatedMinutes: data.estimatedMinutes,
       aiRiskLevel: aiRisk,
       taskImages: data.taskImages || [],
-      referenceLink: data.referenceLink || ""
+      referenceLink: data.referenceLink || "",
+      taskType: data.taskType || null,
     });
 
     // 🔔 EVENT: TASK ASSIGNED

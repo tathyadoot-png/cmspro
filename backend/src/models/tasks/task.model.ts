@@ -54,7 +54,7 @@ export interface ITask extends Document {
 
   createdAt: Date;
   updatedAt: Date;
-
+taskType?: "REEL" | "GRAPHIC" | "BANNER" | "MEDIA_COVERAGE" | "OTHERS";
   aiRiskLevel?: "SAFE" | "AT_RISK" | "HIGH_RISK";
 }
 
@@ -96,6 +96,12 @@ const TaskSchema = new Schema<ITask>(
       required: true,
       index: true,
     },
+    taskType: {
+  type: String,
+  enum: ["REEL", "GRAPHIC", "BANNER", "MEDIA_COVERAGE", "OTHERS"],
+  required: false,
+  default: null,
+},
 
     status: {
       type: String,

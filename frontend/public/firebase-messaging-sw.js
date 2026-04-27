@@ -1,12 +1,30 @@
-messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: "/logo.png",
+importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
 
-    // 🔥 IMPORTANT DATA
-    data: {
-      url: "/dashboard/notifications",
-    },
+// ✅ Firebase init (same config as frontend)
+firebase.initializeApp({
+  apiKey: "AIzaSyBuiwRxvNkOFXCdiky_XAc9oBLtiMIZacQ",
+  authDomain: "cms-sociyo.firebaseapp.com",
+  projectId: "cms-sociyo",
+  storageBucket: "cms-sociyo.firebasestorage.app",
+  messagingSenderId: "225805643674",
+  appId: "1:225805643674:web:c3e16c344b100c324b5423",
+});
+
+const messaging = firebase.messaging();
+
+// 🔥 BACKGROUND HANDLER
+messaging.onBackgroundMessage((payload) => {
+  console.log("🔥 SW PAYLOAD:", payload);
+
+  const title = payload.data?.title || "Notification";
+  const body = payload.data?.body || "";
+  const url = payload.data?.url || "/";
+
+  self.registration.showNotification(title, {
+    body,
+    icon: "/logo.png",
+    data: { url },
   });
 });
 
@@ -23,10 +41,7 @@ self.addEventListener("notificationclick", function (event) {
           return client.focus();
         }
       }
-
-      if (clients.openWindow) {
-        return clients.openWindow(url);
-      }
+      return clients.openWindow(url);
     })
   );
 });

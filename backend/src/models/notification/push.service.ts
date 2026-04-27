@@ -10,16 +10,21 @@ export const sendPush = async (
   try {
     await admin.messaging().send({
       token,
-      notification: {
-        title,
-        body,
+
+      // ✅ DATA ONLY (IMPORTANT)
+      data: {
+        title: title || "Notification",
+        body: body || "",
+        url: data.url || "/",
       },
+
       webpush: {
-        fcmOptions: {
-          link: data.url || "/",
+        headers: {
+          Urgency: "high",
         },
       },
     });
+
   } catch (error: any) {
 
     // ❌ INVALID TOKEN HANDLE
@@ -29,7 +34,6 @@ export const sendPush = async (
     ) {
       console.log("❌ Removing invalid FCM token:", token);
 
-      // 🔥 DB से token हटा दो
       await User.updateMany(
         { fcmTokens: token },
         { $pull: { fcmTokens: token } }

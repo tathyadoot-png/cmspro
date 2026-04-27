@@ -1,12 +1,15 @@
-import { getToken } from "firebase/messaging";
+import { getToken, onMessage } from "firebase/messaging";
 import { messaging } from "./firebase";
 
+/* =========================
+   🔔 INIT + TOKEN SAVE
+========================= */
 export const initNotifications = async () => {
   try {
     const permission = await Notification.requestPermission();
 
     if (permission !== "granted") {
-      console.log("Permission denied");
+      console.log("❌ Permission denied");
       return;
     }
 
@@ -14,7 +17,9 @@ export const initNotifications = async () => {
       vapidKey: "BLHipRh9JZkRQ4JWJx4RzgfZtRH0y-ZXik6ba8JBP5yiagk0ByAAbc9aJu1UT0BvpCOOLrihYu2dI9OA4XMWeZg",
     });
 
-    console.log("FCM TOKEN:", token);
+    console.log("✅ FCM TOKEN:", token);
+
+    if (!token) return;
 
     await fetch("http://localhost:5000/api/users/save-token", {
       method: "POST",
@@ -26,6 +31,26 @@ export const initNotifications = async () => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("🔥 INIT ERROR:", err);
   }
+};
+
+/* =========================
+   🔥 FOREGROUND LISTENER (MOST IMPORTANT)
+========================= */
+export const listenForegroundNotifications = () => {
+  if (!messaging) return;
+
+  onMessage(messaging, (payload) => {
+    console.log("📩 Foreground notification:", payload);
+
+    const title = payload.data?.title || "Notification";
+    const body = payload.data?.body || "";
+
+    // 🔥 MANUAL SHOW
+    new Notification(title, {
+      body,
+      icon: "/logo.png",
+    });
+  });
 };
